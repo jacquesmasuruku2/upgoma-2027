@@ -1,6 +1,0 @@
-project_id = "lbycwajckxjqfgpmbzil"
-
-# Inscription newsletter depuis le site sans session : pas d’exiger un JWT utilisateur.
-[functions.newsletter-subscribe]
-verify_jwt = false
-

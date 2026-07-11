@@ -1,0 +1,52 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: upgoma-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: systeme_academique
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/postgresql/partners_clean.sql:/docker-entrypoint-initdb.d/01-partners.sql
+      - ./deploy/postgresql/students_admission_clean.sql:/docker-entrypoint-initdb.d/02-students.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - upgoma-network
+
+  node:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: upgoma-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/systeme_academique
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+      - "5173:5173"
+      - "8787:8787"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - upgoma-network
+    command: npm run dev
+
+volumes:
+  postgres_data:
+
+networks:
+  upgoma-network:
+    driver: bridge

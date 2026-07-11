@@ -1,1 +1,0 @@
-ALTER TABLE public.fees ADD COLUMN pdf_url text;

@@ -1,0 +1,18 @@
+FROM node:24-alpine
+
+WORKDIR /app
+
+# Copier package.json
+COPY package*.json ./
+
+# Installer les dépendances
+RUN npm install
+
+# Copier le code source
+COPY . .
+
+# Exposer les ports
+EXPOSE 3000 5173 8787
+
+# Commande par défaut
+CMD ["npm", "run", "dev"]
