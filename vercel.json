@@ -1,7 +1,7 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "devCommand": "npm run dev",
+  "buildCommand": "npm run build:site",
+  "outputDirectory": "apps/site/dist",
+  "devCommand": "npm run dev:site",
   "installCommand": "npm install",
   "framework": "vite",
   "redirects": [
