@@ -1,8 +1,8 @@
 {
-  "buildCommand": "npm run build:site",
+  "buildCommand": "cd apps/site && npm run build",
   "outputDirectory": "apps/site/dist",
-  "devCommand": "npm run dev:site",
-  "installCommand": "npm install",
+  "devCommand": "cd apps/site && npm run dev",
+  "installCommand": "npm install --workspaces",
   "framework": "vite",
   "redirects": [
     {
