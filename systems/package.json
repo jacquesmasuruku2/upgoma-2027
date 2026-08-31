@@ -1,0 +1,9 @@
+{
+  "name": "upgoma-vercel-wrapper",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "npm --prefix .. run dev:site",
+    "build": "npm --prefix .. install && npm --prefix .. run build:site"
+  }
+}

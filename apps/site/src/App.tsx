@@ -29,6 +29,9 @@ import AdmissionSuccessPage from "./pages/AdmissionSuccessPage";
 import PartnersPage from "./pages/PartnersPage";
 import ValvePage from "./pages/ValvePage";
 import GrilleDeliberationPage from "./pages/GrilleDeliberationPage";
+import CheckoutPage from "./pages/CheckoutPage";
+import CheckoutSuccessPage from "./pages/CheckoutSuccessPage";
+import CheckoutCancelPage from "./pages/CheckoutCancelPage";
 import Seo from "@/components/Seo";
 import StructuredData from "@/components/StructuredData";
 import AdminAuthRedirect from "@/components/AdminAuthRedirect";
@@ -63,10 +66,12 @@ const RouteChangeTracker = () => {
 /** TopBar une seule fois (évite de recréer Google Translate à chaque changement de route). */
 const PublicChrome = () => {
   const { pathname } = useLocation();
-  const hideTopBar = pathname.startsWith("/admin");
+  const hideTopBar = pathname.startsWith("/admin") || 
+                      pathname.startsWith("/checkout") ||
+                      pathname.startsWith("/admission");
   return (
     <>
-      {/* Toujours monté : masqué sur /admin pour ne pas détruire le widget Google Translate */}
+      {/* Toujours monté : masqué sur /admin, /checkout et /admission pour éviter les conflits DOM avec Google Translate */}
       <div className={hideTopBar ? "hidden" : undefined} aria-hidden={hideTopBar}>
         <TopBar />
       </div>
@@ -108,6 +113,9 @@ const PublicChrome = () => {
             <Route path="/partenaires" element={<PartnersPage />} />
             <Route path="/valve" element={<ValvePage />} />
             <Route path="/grille-deliberation" element={<GrilleDeliberationPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/checkout-success" element={<CheckoutSuccessPage />} />
+            <Route path="/checkout-cancel" element={<CheckoutCancelPage />} />
             <Route path="*" element={<NotFound />} />
       </Routes>
     </>

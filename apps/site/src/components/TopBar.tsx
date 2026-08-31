@@ -47,7 +47,7 @@ const TopBar = () => {
 
   useEffect(() => {
     const handler = () => setVisible(window.scrollY < 80);
-    window.addEventListener("scroll", handler);
+    window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
   }, []);
 

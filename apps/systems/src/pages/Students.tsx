@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Check, X, Trash2, Search, CreditCard } from 'lucide-react';
 import StudentCard from '@/components/StudentCard';
 import ExcelImport from '@/components/ExcelImport';
+import { deleteStudent, updateStudentStatus } from '@/lib/adminApi';
 
 export default function Students() {
   const { user } = useAuth();
@@ -30,37 +31,37 @@ export default function Students() {
   useEffect(() => { load(); }, [filter]);
 
   const approve = async (student: Student) => {
-    // Generate matricule
-    const { data: mat } = await supabase.rpc('generate_matricule' as any);
-    const matricule = mat as string;
+    const matricule = `UPG-${new Date().getFullYear()}-${String(student.id).slice(0, 6).toUpperCase()}`;
 
-    // Update student
-    await supabase.from('students').update({ status: 'approved', matricule } as any).eq('id', student.id);
-
-    // Create auth account for student (password = matricule)
-    const res = await supabase.functions.invoke('create-user', {
-      body: { email: student.email, password: matricule, nom: `${student.nom} ${student.postnom}`, role: null, studentId: student.id }
-    });
-
-    if (res.error) {
-      toast.error("Erreur création compte: " + res.error.message);
-    } else {
+    try {
+      await updateStudentStatus(student.id, 'approved', matricule);
       toast.success(`Étudiant approuvé! Matricule: ${matricule}`);
+      load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Erreur validation');
     }
-    load();
   };
 
   const reject = async (id: string) => {
-    await supabase.from('students').update({ status: 'rejected' } as any).eq('id', id);
-    toast.info('Inscription rejetée');
-    load();
+    try {
+      await updateStudentStatus(id, 'rejected');
+      toast.info('Inscription rejetée');
+      load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Erreur validation');
+    }
   };
 
-  const deleteStudent = async (id: string) => {
+  const handleDeleteStudent = async (id: string) => {
     if (!confirm('Supprimer cet étudiant?')) return;
-    await supabase.from('students').delete().eq('id', id);
-    toast.success('Étudiant supprimé');
-    load();
+
+    try {
+      await deleteStudent(id);
+      toast.success('Étudiant supprimé');
+      load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Erreur suppression');
+    }
   };
 
   const filtered = students.filter(s =>
@@ -133,7 +134,7 @@ export default function Students() {
                         </Button>
                       )}
                       {user?.role === 'super_admin' && (
-                        <Button size="icon" variant="ghost" onClick={() => deleteStudent(s.id)} title="Supprimer">
+                        <Button size="icon" variant="ghost" onClick={() => handleDeleteStudent(s.id)} title="Supprimer">
                           <Trash2 className="h-4 w-4 text-accent" />
                         </Button>
                       )}

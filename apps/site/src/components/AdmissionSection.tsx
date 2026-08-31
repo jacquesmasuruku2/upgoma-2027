@@ -1,7 +1,8 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CreditCard } from "lucide-react";
 import { Link } from "react-router-dom";
 import AnimatedSection from "./AnimatedSection";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { Button } from "@/components/ui/button";
 
 export type AdmissionSectionProps = { variant?: "section" | "page" };
 
@@ -36,7 +37,7 @@ const AdmissionSection = ({ variant = "section" }: AdmissionSectionProps) => {
         </AnimatedSection>
 
         <AnimatedSection delay={0.2}>
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-3 gap-8">
             {/* Left — Online Registration */}
             <div className="border border-border p-8 flex flex-col justify-between">
               <div>
@@ -53,6 +54,27 @@ const AdmissionSection = ({ variant = "section" }: AdmissionSectionProps) => {
               >
                 {t("admission.ctaForm")}
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </div>
+
+            {/* Payment Section */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 p-8 flex flex-col justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-blue-700 mb-3">
+                  Paiement en ligne
+                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Effectuez vos frais d'admission et autres paiements en toute sécurité via notre caisse virtuelle.
+                </p>
+              </div>
+              <Link
+                to="/checkout"
+                className="mt-6"
+              >
+                <Button className="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Passer à la caisse
+                </Button>
               </Link>
             </div>
 

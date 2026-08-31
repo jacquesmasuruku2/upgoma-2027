@@ -16,6 +16,8 @@ interface AuthContextType {
   login: (email: string, password: string, role: UserRole) => Promise<string | null>;
   loginWithGoogle: () => Promise<string | null>;
   logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<string | null>;
+  updatePassword: (newPassword: string) => Promise<string | null>;
 }
 
 const DEV_FALLBACK_USER: AuthUser = {
@@ -142,8 +144,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
   };
 
+  const resetPassword = async (email: string): Promise<string | null> => {
+    if (import.meta.env.DEV) {
+      return null;
+    }
+
+    try {
+      // First, generate the reset link using Supabase Auth
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (resetError) {
+        return resetError.message;
+      }
+
+      // Then send a custom email via our Edge Function
+      // Note: In production, you might want to extract the actual reset link from Supabase
+      // For now, we'll let Supabase handle the default email and this is a backup
+      const { error: emailError } = await supabase.functions.invoke('send-reset-email', {
+        body: {
+          email,
+          resetLink: `${window.location.origin}/reset-password`, // This would ideally be the actual link from Supabase
+        },
+      });
+
+      if (emailError) {
+        console.warn('Custom email failed, using Supabase default:', emailError.message);
+        // Don't fail the whole process if custom email fails
+      }
+
+      return null;
+    } catch (error: any) {
+      return error.message || 'Erreur lors de la réinitialisation';
+    }
+  };
+
+  const updatePassword = async (newPassword: string): Promise<string | null> => {
+    if (import.meta.env.DEV) {
+      return null;
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return error.message;
+    return null;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, logout, resetPassword, updatePassword }}>
       {children}
     </AuthContext.Provider>
   );

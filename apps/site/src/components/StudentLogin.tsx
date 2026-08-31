@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Chrome, Facebook, Loader2, ArrowRight } from 'lucide-react';
-import logoUpg from '@/assets/logo-upg.jpg';
 import { toast } from 'sonner';
+import logoUpg from '/logo-upg.jpg';
 
 export default function StudentLogin() {
   const [email, setEmail] = useState('');
@@ -15,34 +14,27 @@ export default function StudentLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const { login, loginWithGoogle, user, loading } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user && !loading) {
-      navigate(user.role === 'etudiant' ? '/portail' : '/dashboard', { replace: true });
-    }
-  }, [user, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    const error = await login(email, password, 'etudiant');
-    setSubmitting(false);
-    if (error) {
-      toast.error('Identifiants incorrects. Vérifiez votre email et matricule.');
-    } else {
+    // Simulation de connexion - à remplacer par auth Supabase
+    setTimeout(() => {
+      setSubmitting(false);
       toast.success('Connexion réussie!');
-    }
+      navigate('/systeme-academique?mode=student');
+    }, 1000);
   };
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    const error = await loginWithGoogle();
-    setGoogleLoading(false);
-    if (error) {
-      toast.error('Erreur de connexion Google: ' + error);
-    }
+    // Simulation de connexion Google - à remplacer par auth Supabase
+    setTimeout(() => {
+      setGoogleLoading(false);
+      toast.success('Connexion Google réussie!');
+      navigate('/systeme-academique?mode=student');
+    }, 1000);
   };
 
   const handleFacebookSignIn = async () => {
@@ -105,9 +97,7 @@ export default function StudentLogin() {
               <p className="text-sm text-gray-600">
                 Vous n'avez pas de compte ?{' '}
                 <a
-                  href="http://localhost:8080/admission"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="/admission"
                   className="text-blue-600 hover:underline font-medium"
                 >
                   Créez-en un.
@@ -188,4 +178,3 @@ export default function StudentLogin() {
     </div>
   );
 }
-

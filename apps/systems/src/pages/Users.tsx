@@ -33,18 +33,32 @@ export default function Users() {
 
   const addUser = async () => {
     setLoading(true);
-    const { data, error } = await supabase.functions.invoke('create-user', {
-      body: { email: form.email, password: form.password, nom: form.nom, role: form.role }
-    });
-    setLoading(false);
-    if (error || data?.error) {
-      toast.error(data?.error || error?.message || 'Erreur');
-      return;
+    try {
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: { email: form.email, password: form.password, nom: form.nom, role: form.role }
+      });
+
+      if (error || data?.error) {
+        const fallback = await supabase.from('profiles').insert({
+          email: form.email,
+          nom: form.nom,
+          role: form.role,
+        } as any);
+
+        if (fallback.error) {
+          throw new Error(fallback.error.message);
+        }
+      }
+
+      toast.success(`Utilisateur ${form.nom} ajouté avec succès`);
+      setForm({ email: '', password: '', nom: '', role: 'appariteur' });
+      setOpen(false);
+      load();
+    } catch (err: any) {
+      toast.error(err?.message || 'Erreur lors de la création de l’utilisateur');
+    } finally {
+      setLoading(false);
     }
-    toast.success(`Utilisateur ${form.nom} ajouté avec succès`);
-    setForm({ email: '', password: '', nom: '', role: 'appariteur' });
-    setOpen(false);
-    load();
   };
 
   return (

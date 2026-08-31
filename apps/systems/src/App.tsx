@@ -7,7 +7,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import Login from "@/pages/Login";
 import StudentLogin from "@/pages/StudentLogin";
-import Registration from "@/pages/Registration";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
 import Students from "@/pages/Students";
 import Payments from "@/pages/Payments";
@@ -26,6 +27,21 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
+
+// Redirect component for /inscription to main site admission page
+function RegistrationRedirect() {
+  useEffect(() => {
+    window.location.href = "http://localhost:8080/admission";
+  }, []);
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-muted/40">
+      <div className="text-center">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Redirection vers le formulaire d'admission...</p>
+      </div>
+    </div>
+  );
+}
 
 // Setup initial admin on first load
 function AdminSetup() {
@@ -57,7 +73,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Login />} />
             <Route path="/login-etudiant" element={<StudentLogin />} />
-            <Route path="/inscription" element={<Registration />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/inscription" element={<RegistrationRedirect />} />
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/etudiants" element={<Students />} />
