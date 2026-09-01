@@ -219,6 +219,12 @@ const FeesPage = () => {
                 <div className="mt-12 rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-8 text-center">
                   <p className="mx-auto max-w-2xl text-sm leading-relaxed text-muted-foreground">{t("fees.disclaimer")}</p>
                   <div className="mt-6 flex flex-wrap justify-center gap-3">
+                    <Link to="/checkout">
+                      <Button className="gap-2 bg-blue-900 hover:bg-blue-800">
+                        <CreditCard className="h-4 w-4" />
+                        Payer en ligne
+                      </Button>
+                    </Link>
                     <Link to="/admission">
                       <Button className="gap-2">
                         <GraduationCap className="h-4 w-4" />
