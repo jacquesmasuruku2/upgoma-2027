@@ -4,6 +4,7 @@
   "devCommand": "npm run dev:site",
   "installCommand": "npm install",
   "framework": "vite",
+  "version": "1.0.0",
   "redirects": [
     {
       "source": "/:path*",
