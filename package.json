@@ -4,18 +4,22 @@
   "version": "1.0.0",
   "description": "Plateforme intégrée pour l'Université Polytechnique de Goma",
   "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "echo 'Run dev in individual apps'",
-    "dev:site": "cd apps/site && npm run dev",
-    "dev:server": "cd apps/server && npm run dev",
-    "dev:systems": "cd apps/systems && npm run dev",
-    "build": "echo 'Run build in individual apps'",
-    "build:site": "cd apps/site && npm run build",
-    "build:server": "cd apps/server && npm run build",
-    "build:systems": "cd apps/systems && npm run build",
-    "lint": "echo 'Run lint in individual apps'",
-    "test": "echo 'Run test in individual apps'",
-    "test:watch": "echo 'Run test:watch in individual apps'"
+    "dev": "npm --workspaces run dev",
+    "dev:site": "npm --workspace=@upgoma/site run dev",
+    "dev:server": "npm --workspace=@upgoma/server run dev",
+    "dev:systems": "npm --workspace=@upgoma/systems run dev",
+    "build": "npm --workspaces run build",
+    "build:site": "npm --workspace=@upgoma/site run build",
+    "build:server": "npm --workspace=@upgoma/server run build",
+    "build:systems": "npm --workspace=@upgoma/systems run build",
+    "lint": "npm --workspaces run lint",
+    "test": "npm --workspaces run test",
+    "test:watch": "npm --workspaces run test:watch"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
