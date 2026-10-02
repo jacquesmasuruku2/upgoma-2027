@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowRight, Chrome, Eye, EyeOff, GraduationCap, Loader2, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, GraduationCap, Loader2, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
 import logoUpg from '@/assets/logo-upg.jpg';
 import classroomImage from '@site/assets/auditoire-habineza.jpg';
 import { toast } from 'sonner';
@@ -24,8 +24,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const { login, loginWithGoogle, user, loading } = useAuth();
+  const { login, user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,15 +42,6 @@ export default function Login() {
       toast.error('Identifiants incorrects. Vérifiez votre email et mot de passe.');
     } else {
       toast.success('Connexion réussie!');
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
-    const error = await loginWithGoogle();
-    setGoogleLoading(false);
-    if (error) {
-      toast.error('Erreur de connexion Google: ' + error);
     }
   };
 
@@ -179,16 +169,6 @@ export default function Login() {
             <span>OU</span>
             <span className="h-px flex-1 bg-[#dce2dd]" />
           </div>
-
-          <Button
-            onClick={handleGoogleSignIn}
-            variant="outline"
-            className="h-12 w-full border-[#d5ddd7] bg-white text-sm font-medium text-[#354840] hover:bg-[#f8faf8]"
-            disabled={googleLoading}
-          >
-            {googleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Chrome className="mr-2 h-4 w-4" />}
-            Continuer avec Google
-          </Button>
 
           <div className="mt-8 border-t border-[#dce2dd] pt-5">
             <Link to="/login-etudiant" className="group flex items-center justify-between gap-4 text-sm text-[#52645b] transition-colors hover:text-[#205b4b]">

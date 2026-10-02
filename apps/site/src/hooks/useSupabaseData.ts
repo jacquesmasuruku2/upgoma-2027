@@ -652,54 +652,32 @@ export const useDeleteLibraryBook = () => {
   });
 };
 
-// Image upload
-const uploadToBucket = async (file: File, folder: string, bucket: string): Promise<string> => {
-  const ext = file.name.split(".").pop()?.toLowerCase();
-  if (!ext) {
-    throw new Error("Fichier sans extension (impossible de générer un chemin d'upload).");
+// Image upload via backend
+const uploadToServer = async (file: File, type: "image" | "document", folder: string): Promise<string> => {
+  const apiBase = (import.meta.env.VITE_ADMISSION_API_BASE || "http://127.0.0.1:8787").replace(/\/$/, "");
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("type", type);
+  formData.append("folder", folder);
+
+  const response = await fetch(`${apiBase}/api/uploads`, { method: "POST", body: formData });
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok || !result?.url) {
+    throw new Error(result?.error || `Upload ${type} impossible.`);
   }
 
-  const path = `${folder}/${Date.now()}.${ext}`;
-
-  // Le Storage bucket requiert l'utilisateur `authenticated` (RLS) sauf pour partnership-documents et partnership-logos
-  if (
-    bucket !== "partnership-documents" &&
-    !(bucket === "images" && folder === "partnership-logos")
-  ) {
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session) {
-      throw new Error(
-        "Vous devez être connecté pour uploader des fichiers (RLS storage exige role=authenticated).",
-      );
-    }
-  }
-
-  const { error } = await supabase.storage.from(bucket).upload(path, file);
-  if (error) {
-    console.error("[uploadImage] Erreur Supabase Storage:", { bucket, path, error });
-    throw new Error(
-      typeof error.message === "string"
-        ? error.message
-        : "Erreur lors de l'upload (Supabase Storage).",
-    );
-  }
-
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  if (!data?.publicUrl) {
-    throw new Error("Impossible de récupérer l'URL publique après upload.");
-  }
-
-  return data.publicUrl;
+  return String(result.url);
 };
 
 export const uploadImage = async (file: File, folder: string): Promise<string> =>
-  uploadToBucket(file, folder, "images");
+  uploadToServer(file, "image", folder);
 
 export const uploadVideo = async (file: File, folder: string): Promise<string> =>
-  uploadToBucket(file, folder, "videos");
+  uploadToServer(file, "document", folder);
 
 export const uploadPdf = async (file: File, folder: string): Promise<string> =>
-  uploadToBucket(file, folder, "partnership-documents");
+  uploadToServer(file, "document", folder);
 
 // Partners
 export const usePartners = () =>

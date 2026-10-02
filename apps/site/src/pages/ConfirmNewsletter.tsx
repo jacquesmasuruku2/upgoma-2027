@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/Layout";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,40 +16,15 @@ const ConfirmNewsletter = () => {
     }
 
     const confirm = async () => {
-      const { data, error } = await supabase
-        .from("newsletter_subscribers")
-        .update({ confirmed: true, confirmed_at: new Date().toISOString() })
-        .eq("confirmation_token", token)
-        .eq("confirmed", false)
-        .select("id")
-        .maybeSingle();
-
-      if (error) {
-        setStatus("error");
-        return;
-      }
-
-      if (data) {
-        setStatus("success");
-        return;
-      }
-
-      // Lien potentiellement déjà "consommé" (pré-ouverture automatique par client mail/antispam).
-      // Dans ce cas, si le token existe déjà avec confirmed=true, on affiche succès.
-      const { data: existing, error: readError } = await supabase
-        .from("newsletter_subscribers")
-        .select("id, confirmed")
-        .eq("confirmation_token", token)
-        .maybeSingle();
-
-      if (!readError && existing?.confirmed) {
-        setStatus("success");
-      } else {
-        setStatus("error");
-      }
+      const response = await fetch("/api/newsletter/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      setStatus(response.ok ? "success" : "error");
     };
 
-    confirm();
+    confirm().catch(() => setStatus("error"));
   }, [params]);
 
   return (

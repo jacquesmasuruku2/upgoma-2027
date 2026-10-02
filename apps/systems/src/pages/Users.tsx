@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
+import { inviteAdminUser, type AdminInvitationInput } from '@/lib/adminApi';
+import { authRequest } from '@/lib/authApi';
 
 interface UserRow {
   id: string;
@@ -23,14 +24,22 @@ export default function Users() {
   const { user } = useAuth();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ email: '', password: '', nom: '', role: 'appariteur' });
+  const [form, setForm] = useState({ email: '', nom: '', role: 'appariteur' as AdminInvitationInput['role'] });
   const [loading, setLoading] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(true);
 
   const isSuperAdmin = user?.role === 'super_admin';
 
   const load = async () => {
-    const { data } = await supabase.from('profiles').select('id, email, nom, role').not('role', 'is', null);
-    setUsers((data as UserRow[]) || []);
+    setUsersLoading(true);
+    try {
+      const { users: rows } = await authRequest<{ users: UserRow[] }>('/api/admin/users');
+      setUsers(rows);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Impossible de charger les utilisateurs.');
+    } finally {
+      setUsersLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -41,8 +50,8 @@ export default function Users() {
       return;
     }
 
-    if (!form.email || !form.nom || !form.password) {
-      toast.error('Remplissez le nom, l’email et le mot de passe.');
+    if (!form.email || !form.nom) {
+      toast.error('Remplissez le nom et l’adresse e-mail.');
       return;
     }
 
@@ -51,31 +60,11 @@ export default function Users() {
       return;
     }
 
-    if (form.password.length < 6) {
-      toast.error('Le mot de passe doit contenir au moins 6 caractères.');
-      return;
-    }
-
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-user', {
-        body: { email: form.email, password: form.password, nom: form.nom, role: form.role }
-      });
-
-      if (error || data?.error) {
-        const fallback = await supabase.from('profiles').insert({
-          email: form.email,
-          nom: form.nom,
-          role: form.role,
-        } as any);
-
-        if (fallback.error) {
-          throw new Error(fallback.error.message);
-        }
-      }
-
-      toast.success(`Invitation envoyée à ${form.nom} avec le rôle ${form.role.replace('_', ' ')}`);
-      setForm({ email: '', password: '', nom: '', role: 'appariteur' });
+      await inviteAdminUser({ name: form.nom, email: form.email, role: form.role });
+      toast.success(`Invitation envoyée à ${form.email}.`);
+      setForm({ email: '', nom: '', role: 'appariteur' });
       setOpen(false);
       load();
     } catch (err: any) {
@@ -105,7 +94,6 @@ export default function Users() {
             <div className="space-y-3">
               <div><Label>Nom complet</Label><Input value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} /></div>
               <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
-              <div><Label>Mot de passe temporaire</Label><Input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} /></div>
               <div>
                 <Label>Rôle</Label>
                 <Select value={form.role} onValueChange={v => setForm(f => ({ ...f, role: v }))}>
@@ -118,7 +106,7 @@ export default function Users() {
                   </SelectContent>
                 </Select>
               </div>
-              <p className="text-xs text-muted-foreground">Seul le super admin peut créer ou inviter d’autres comptes d’administration du système.</p>
+              <p className="text-xs text-muted-foreground">L’invitation contient un lien sécurisé pour définir le mot de passe.</p>
               <Button onClick={addUser} disabled={loading || !isSuperAdmin} className="w-full">{loading ? 'Invitation...' : 'Créer l\'invitation'}</Button>
             </div>
           </DialogContent>
@@ -147,9 +135,10 @@ export default function Users() {
                   </TableCell>
                 </TableRow>
               ))}
-              {users.length === 0 && (
+              {!usersLoading && users.length === 0 && (
                 <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">Aucun utilisateur</TableCell></TableRow>
               )}
+              {usersLoading && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">Chargement...</TableCell></TableRow>}
             </TableBody>
           </Table>
         </CardContent>

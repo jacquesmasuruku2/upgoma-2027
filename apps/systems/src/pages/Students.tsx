@@ -12,10 +12,10 @@ import { toast } from 'sonner';
 import { Check, X, Trash2, Search, CreditCard } from 'lucide-react';
 import StudentCard from '@/components/StudentCard';
 import ExcelImport from '@/components/ExcelImport';
-import { deleteStudent, updateStudentStatus } from '@/lib/adminApi';
 
 export default function Students() {
   const { user } = useAuth();
+  const canReviewAdmissions = user?.role === 'super_admin' || user?.role === 'appariteur';
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<string>('all');
@@ -31,10 +31,15 @@ export default function Students() {
   useEffect(() => { load(); }, [filter]);
 
   const approve = async (student: Student) => {
+    if (!canReviewAdmissions) return;
     const matricule = `UPG-${new Date().getFullYear()}-${String(student.id).slice(0, 6).toUpperCase()}`;
 
     try {
-      await updateStudentStatus(student.id, 'approved', matricule);
+      const { error } = await supabase
+        .from('students')
+        .update({ status: 'approved', matricule })
+        .eq('id', student.id);
+      if (error) throw error;
       toast.success(`Étudiant approuvé! Matricule: ${matricule}`);
       load();
     } catch (error) {
@@ -43,8 +48,13 @@ export default function Students() {
   };
 
   const reject = async (id: string) => {
+    if (!canReviewAdmissions) return;
     try {
-      await updateStudentStatus(id, 'rejected');
+      const { error } = await supabase
+        .from('students')
+        .update({ status: 'rejected' })
+        .eq('id', id);
+      if (error) throw error;
       toast.info('Inscription rejetée');
       load();
     } catch (error) {
@@ -53,10 +63,12 @@ export default function Students() {
   };
 
   const handleDeleteStudent = async (id: string) => {
+    if (user?.role !== 'super_admin') return;
     if (!confirm('Supprimer cet étudiant?')) return;
 
     try {
-      await deleteStudent(id);
+      const { error } = await supabase.from('students').delete().eq('id', id);
+      if (error) throw error;
       toast.success('Étudiant supprimé');
       load();
     } catch (error) {
@@ -118,7 +130,7 @@ export default function Students() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      {s.status === 'pending' && (
+                      {canReviewAdmissions && s.status === 'pending' && (
                         <>
                           <Button size="icon" variant="ghost" onClick={() => approve(s)} title="Approuver">
                             <Check className="h-4 w-4 text-green-600" />

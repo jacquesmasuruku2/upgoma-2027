@@ -9,7 +9,9 @@ import {
   Handshake,
   ImageIcon,
   Library,
+  MailCheck,
   Newspaper,
+  Settings,
   Users,
   Video,
   Wrench,
@@ -46,6 +48,7 @@ const sections = [
   { label: 'Services', slug: 'services', icon: Wrench },
   { label: 'Bibliothèque', slug: 'bibliotheque', icon: Library },
   { label: 'Partenaires', slug: 'partenaires', icon: Handshake },
+  { label: 'Newsletter', slug: 'newsletter', icon: MailCheck },
 ];
 
 export default function SiteManagementDashboard({ onNavigate }: { onNavigate: (slug: string) => void }) {
@@ -90,9 +93,14 @@ export default function SiteManagementDashboard({ onNavigate }: { onNavigate: (s
           <h2 className="mt-1 text-2xl font-bold text-[#20352d]">Tableau de bord</h2>
           <p className="mt-2 text-sm text-muted-foreground">Vue d’ensemble des contenus et accès rapides aux rubriques.</p>
         </div>
-        <Button onClick={() => onNavigate('blog')} className="w-full bg-[#205b4b] text-white hover:bg-[#17483b] sm:w-auto">
-          <Newspaper className="mr-2 h-4 w-4" /> Gérer les articles
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button variant="outline" onClick={() => onNavigate('parametres')} className="w-full sm:w-auto">
+            <Settings className="mr-2 h-4 w-4" /> Paramètres
+          </Button>
+          <Button onClick={() => onNavigate('blog')} className="w-full bg-[#205b4b] text-white hover:bg-[#17483b] sm:w-auto">
+            <Newspaper className="mr-2 h-4 w-4" /> Gérer les articles
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

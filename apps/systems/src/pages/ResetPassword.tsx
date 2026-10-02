@@ -8,6 +8,7 @@ import { Eye, EyeOff, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import logoUpg from '@/assets/logo-upg.jpg';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { authRequest } from '@/lib/authApi';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -18,24 +19,17 @@ export default function ResetPassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [validToken, setValidToken] = useState<boolean | null>(null);
-  const { updatePassword } = useAuth();
+  const { refreshSession } = useAuth();
 
   useEffect(() => {
-    // Check if we have the access token in the URL
-    const accessToken = searchParams.get('access_token');
-    if (!accessToken) {
-      setValidToken(false);
-      toast.error('Token de réinitialisation manquant');
-    } else {
-      setValidToken(true);
-    }
+    setValidToken(Boolean(searchParams.get('token')));
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (password.length < 6) {
-      toast.error('Le mot de passe doit contenir au moins 6 caractères');
+    if (password.length < 12 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      toast.error('Utilisez au moins 12 caractères, une majuscule, une minuscule, un chiffre et un symbole.');
       return;
     }
 
@@ -45,16 +39,18 @@ export default function ResetPassword() {
     }
 
     setLoading(true);
-    const error = await updatePassword(password);
-    setLoading(false);
-
-    if (error) {
-      toast.error('Erreur: ' + error);
-    } else {
-      toast.success('Mot de passe réinitialisé avec succès!');
-      setTimeout(() => {
-        navigate('/login-etudiant');
-      }, 2000);
+    try {
+      const { user } = await authRequest<{ user: { role: string } }>('/api/auth/complete-token', {
+        method: 'POST',
+        body: JSON.stringify({ token: searchParams.get('token'), password }),
+      });
+      await refreshSession();
+      toast.success('Mot de passe défini avec succès.');
+      setTimeout(() => navigate(user.role === 'etudiant' ? '/system/portail' : '/system/dashboard'), 1200);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la définition du mot de passe.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -117,7 +113,7 @@ export default function ResetPassword() {
               <p className="flex items-start gap-2">
                 <CheckCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                 <span>
-                  Entrez votre nouveau mot de passe. Assurez-vous qu'il contient au moins 6 caractères.
+                  Entrez un mot de passe d’au moins 12 caractères avec une majuscule, une minuscule, un chiffre et un symbole.
                 </span>
               </p>
             </div>
@@ -133,7 +129,7 @@ export default function ResetPassword() {
                     onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    minLength={6}
+                    minLength={12}
                     disabled={loading}
                     className="pr-10"
                   />
@@ -157,7 +153,7 @@ export default function ResetPassword() {
                     onChange={e => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    minLength={6}
+                    minLength={12}
                     disabled={loading}
                     className="pr-10"
                   />
@@ -178,7 +174,7 @@ export default function ResetPassword() {
             </form>
 
             <Button
-              onClick={() => navigate('/login-etudiant')}
+              onClick={() => navigate('/login')}
               variant="ghost"
               className="w-full"
               type="button"

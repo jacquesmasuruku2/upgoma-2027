@@ -1,0 +1,462 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AppRole {
+  super_admin
+  appariteur
+  enseignant
+  finance
+
+  @@map("app_role")
+}
+
+model AuthUser {
+  id                 String    @id @db.Uuid
+  email              String?   @unique
+  encryptedPassword  String?   @map("encrypted_password")
+  emailConfirmedAt   DateTime? @map("email_confirmed_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  profiles           Profile[]
+  userRoles          UserRole[]
+
+  @@schema("auth")
+  @@map("users")
+}
+
+model Profile {
+  id        String    @id @db.Uuid
+  email     String
+  nom       String
+  role      AppRole?
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  authUser  AuthUser  @relation(fields: [id], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model UserRole {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  role      AppRole
+  authUser  AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@map("user_roles")
+}
+
+model Student {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  matricule         String?   @unique
+  nom               String
+  postnom           String
+  prenom            String
+  sexe              String
+  dateNaissance     DateTime  @map("date_naissance") @db.Date
+  lieuNaissance     String    @map("lieu_naissance")
+  nationalite       String    @default("Congolaise")
+  telephone         String
+  email             String
+  adresse           String
+  domaine           String
+  filiere           String
+  promotion         String
+  anneeAcademique   String    @default("2025-2026") @map("annee_academique")
+  photoUrl          String?   @map("photo_url")
+  diplomeUrl        String?   @map("diplome_url")
+  bulletinUrl      String?   @map("bulletin_url")
+  attestationUrl    String?   @map("attestation_url")
+  status            String    @default("pending")
+  userId            String?   @map("user_id") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  payments          Payment[]
+  requests          Request[]
+  assignmentSubs    AssignmentSubmission[]
+  grades            Grade[]
+  attendances       Attendance[]
+
+  @@map("students")
+}
+
+model Payment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
+  montant   Decimal  @db.Decimal(10,2)
+  motif     String
+  tranche   String
+  date      DateTime @db.Date
+  createdBy String?  @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Course {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code          String    @unique
+  nom           String
+  credits       Int       @default(3)
+  enseignantId  String?   @map("enseignant_id") @db.Uuid
+  enseignantNom String?   @map("enseignant_nom")
+  filiere       String
+  promotion     String
+  filieres      String[]  @default([])
+  documentUrl   String?   @map("document_url")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  assignments   Assignment[]
+  grades        Grade[]
+  attendances   Attendance[]
+
+  @@map("courses")
+}
+
+model Grade {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId  String   @map("student_id") @db.Uuid
+  courseId   String   @map("course_id") @db.Uuid
+  tp         Decimal? @db.Decimal(5,2)
+  interro    Decimal? @db.Decimal(5,2)
+  examen     Decimal? @db.Decimal(5,2)
+  total      Decimal? @db.Decimal(5,2)
+  published  Boolean? @default(false)
+  createdBy  String?  @map("created_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+  @@map("grades")
+}
+
+model Request {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId   String   @map("student_id") @db.Uuid
+  type        String
+  sujet       String
+  message     String
+  status      String   @default("pending")
+  response    String?
+  respondedBy String?  @map("responded_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("requests")
+}
+
+model Announcement {
+  id        String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titre     String
+  contenu   String
+  auteur    String
+  createdBy String?           @map("created_by") @db.Uuid
+  createdAt DateTime          @default(now()) @map("created_at")
+
+  reads     AnnouncementRead[]
+
+  @@map("announcements")
+}
+
+model AnnouncementRead {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  announcementId String     @map("announcement_id") @db.Uuid
+  userId        String      @map("user_id") @db.Uuid
+  readAt        DateTime    @default(now()) @map("read_at")
+
+  announcement  Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@map("announcement_reads")
+}
+
+model ChatMessage {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  senderId  String   @map("sender_id") @db.Uuid
+  senderName String  @map("sender_name")
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("chat_messages")
+}
+
+model Assignment {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId    String   @map("course_id") @db.Uuid
+  title       String
+  description String?
+  fileUrl     String?  @map("file_url")
+  deadline    DateTime @db.Timestamptz()
+  createdBy   String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  submissions AssignmentSubmission[]
+
+  @@map("assignments")
+}
+
+model AssignmentSubmission {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  assignmentId String   @map("assignment_id") @db.Uuid
+  studentId    String   @map("student_id") @db.Uuid
+  fileUrl      String?  @map("file_url")
+  description  String?
+  submittedAt  DateTime @default(now()) @map("submitted_at")
+
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+  @@map("assignment_submissions")
+}
+
+model GradeHistory {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gradeId     String   @map("grade_id") @db.Uuid
+  studentId   String   @map("student_id") @db.Uuid
+  courseId    String   @map("course_id") @db.Uuid
+  previousNote Decimal? @map("previous_note") @db.Decimal(5,2)
+  newNote     Decimal? @map("new_note") @db.Decimal(5,2)
+  modifiedBy  String?  @map("modified_by") @db.Uuid
+  modifiedAt  DateTime @default(now()) @map("modified_at")
+  reason      String?
+
+  @@map("grade_history")
+}
+
+model Personnel {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  role         String
+  bio          String?
+  photoUrl     String?  @map("photo_url")
+  displayOrder Int?     @default(0) @map("display_order")
+  email        String?
+  linkedinUrl  String?  @map("linkedin_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("personnel")
+}
+
+model BlogArticle {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  excerpt     String?
+  content     String?
+  category    String?
+  author      String?
+  imageUrl    String?   @map("image_url")
+  published   Boolean   @default(false)
+  publishedAt DateTime? @map("published_at")
+  viewsCount  Int       @default(0) @map("views_count")
+  likesCount  Int       @default(0) @map("likes_count")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  comments    BlogComment[]
+
+  @@map("blog_articles")
+}
+
+model BlogComment {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  articleId  String    @map("article_id") @db.Uuid
+  authorName String    @map("author_name")
+  authorEmail String?  @map("author_email")
+  content    String
+  approved   Boolean?  @default(true)
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  article    BlogArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@map("blog_comments")
+}
+
+model GalleryItem {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title        String
+  description  String?
+  imageUrl     String   @map("image_url")
+  category     String?
+  displayOrder Int?     @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("gallery")
+}
+
+model Video {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title        String
+  description  String?
+  url          String
+  thumbnailUrl String?  @map("thumbnail_url")
+  category     String?
+  isPublished  Boolean  @default(false) @map("is_published")
+  displayOrder Int?     @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("videos")
+}
+
+model CollegePost {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  content     String?
+  author      String?
+  imageUrl    String?   @map("image_url")
+  published   Boolean   @default(false)
+  viewsCount  Int       @default(0) @map("views_count")
+  likesCount  Int       @default(0) @map("likes_count")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@map("college_posts")
+}
+
+model CalendarEvent {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  description String?
+  eventDate   DateTime @map("event_date") @db.Date
+  endDate     DateTime? @map("end_date") @db.Date
+  category    String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("calendar_events")
+}
+
+model Fee {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  faculty      String
+  cycle        String   @default("Licence")
+  amount       Int      @default(0)
+  currency     String   @default("USD")
+  description  String?
+  pdfUrl       String?  @map("pdf_url")
+  displayOrder Int?     @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("fees")
+}
+
+model FacultyContent {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String   @unique
+  name           String
+  fullName       String   @map("full_name")
+  description    String?
+  longDescription String?  @map("long_description")
+  departments    String[] @default([])
+  imageUrl       String?  @map("image_url")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("faculty_content")
+}
+
+model LibraryBook {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title        String
+  author       String?
+  description  String?
+  category     String?
+  pdfUrl       String?  @map("pdf_url")
+  coverUrl     String?  @map("cover_url")
+  published    Boolean  @default(false)
+  displayOrder Int?     @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("library_books")
+}
+
+model NewsletterSubscriber {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String
+  email              String    @unique
+  confirmed          Boolean   @default(false)
+  confirmationToken  String    @map("confirmation_token") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at")
+  confirmedAt        DateTime? @map("confirmed_at")
+
+  @@map("newsletter_subscribers")
+}
+
+model Service {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  slug           String   @unique
+  description    String?
+  longDescription String?  @map("long_description")
+  imageUrl       String?  @map("image_url")
+  displayOrder   Int?     @default(0) @map("display_order")
+  published      Boolean  @default(true)
+  contactEmail   String?  @map("contact_email")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("services")
+}
+
+model Partner {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  logoUrl   String?  @map("logo_url")
+  website   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("partners")
+}
+
+model PartnershipRequest {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nom       String
+  email     String
+  message   String
+  status    String   @default("pending")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("partnership_requests")
+}
+
+model Attendance {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId    String   @map("course_id") @db.Uuid
+  studentId   String   @map("student_id") @db.Uuid
+  sessionDate DateTime @map("session_date") @db.Date
+  sessionType String   @map("session_type")
+  present     Boolean  @default(false)
+  notes       String?
+
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, studentId, sessionDate, sessionType])
+  @@map("attendances")
+}
+
+model DocumentVerificationLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId   String?  @map("student_id") @db.Uuid
+  documentType String? @map("document_type")
+  status      String
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("document_verification_logs")
+}

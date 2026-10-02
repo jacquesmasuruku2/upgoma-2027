@@ -17,6 +17,8 @@ interface StudentData {
   promotion: string;
   dateInscription: string;
   reference: string;
+  studentId?: string;
+  emailConfirmationSent?: boolean;
 }
 
 const AdmissionSuccessPage = () => {
@@ -273,10 +275,14 @@ Signature électronique: ${studentData.reference}
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
                   <Mail className="w-6 h-6 text-blue-600" />
                 </div>
-                <h3 className="font-medium text-gray-900 mb-1">1. Confirmation email</h3>
-                <p className="text-sm text-gray-600">
-                  Vous recevrez un email de confirmation dans les prochaines 24 heures
-                </p>
+                <h3 className="font-medium text-gray-900 mb-1">1. Confirmation par e-mail</h3>
+                {studentData.emailConfirmationSent ? (
+                  <p className="text-sm text-gray-600">Confirmation envoyée à {studentData.email}.</p>
+                ) : (
+                  <p className="text-sm text-gray-600">
+                    Votre dossier est enregistré. L’e-mail de confirmation n’a pas pu être envoyé pour le moment.
+                  </p>
+                )}
               </div>
               
               <div className="text-center p-4 bg-gray-50 rounded-lg">

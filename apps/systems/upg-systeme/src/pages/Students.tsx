@@ -38,15 +38,28 @@ export default function Students() {
     await supabase.from('students').update({ status: 'approved', matricule } as any).eq('id', student.id);
 
     // Create auth account for student (password = matricule)
-    const res = await supabase.functions.invoke('create-user', {
-      body: { email: student.email, password: matricule, nom: `${student.nom} ${student.postnom}`, role: null, studentId: student.id }
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email: student.email,
+      password: matricule,
+      options: { data: { nom: `${student.nom} ${student.postnom}` } },
     });
 
-    if (res.error) {
-      toast.error("Erreur création compte: " + res.error.message);
-    } else {
-      toast.success(`Étudiant approuvé! Matricule: ${matricule}`);
+    if (signUpError && !/already registered|already exists/i.test(signUpError.message)) {
+      toast.error('Erreur création compte: ' + signUpError.message);
+      return;
     }
+
+    const userId = signUpData.user?.id || (await supabase.from('profiles').select('id').eq('email', student.email).maybeSingle()).data?.id;
+    if (userId) {
+      await supabase.from('students').update({ user_id: userId } as any).eq('id', student.id);
+      await supabase.from('profiles').upsert({
+        id: userId,
+        email: student.email,
+        nom: `${student.nom} ${student.postnom}`,
+      } as any);
+    }
+
+    toast.success(`Étudiant approuvé! Matricule: ${matricule}`);
     load();
   };
 

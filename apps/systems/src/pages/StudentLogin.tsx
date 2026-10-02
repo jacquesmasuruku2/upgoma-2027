@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Chrome, Facebook, Loader2, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 import logoUpg from '@/assets/logo-upg.jpg';
 import { toast } from 'sonner';
 
@@ -14,8 +14,7 @@ export default function StudentLogin() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const { login, loginWithGoogle, user, loading } = useAuth();
+  const { login, user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,19 +35,6 @@ export default function StudentLogin() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
-    const error = await loginWithGoogle();
-    setGoogleLoading(false);
-    if (error) {
-      toast.error('Erreur de connexion Google: ' + error);
-    }
-  };
-
-  const handleFacebookSignIn = async () => {
-    toast.error('Connexion Facebook non implémentée pour le moment');
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
       <div className="w-full max-w-md">
@@ -62,41 +48,6 @@ export default function StudentLogin() {
                 className="mx-auto h-20 w-20 object-contain"
               />
               <h1 className="text-3xl font-serif text-blue-900 font-bold">Connexion</h1>
-            </div>
-
-            {/* Social login buttons */}
-            <div className="flex gap-3">
-              <Button
-                onClick={handleGoogleSignIn}
-                variant="outline"
-                className="flex-1 h-12 border-gray-300 text-gray-700 hover:bg-gray-50"
-                disabled={googleLoading}
-              >
-                {googleLoading ? (
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                ) : (
-                  <Chrome className="h-5 w-5 mr-2" />
-                )}
-                Google
-              </Button>
-              <Button
-                onClick={handleFacebookSignIn}
-                variant="outline"
-                className="flex-1 h-12 border-gray-300 text-gray-700 hover:bg-gray-50"
-              >
-                <Facebook className="h-5 w-5 mr-2" />
-                Facebook
-              </Button>
-            </div>
-
-            {/* Separator */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-4 text-gray-500">ou</span>
-              </div>
             </div>
 
             {/* Subtitle and links */}
@@ -113,12 +64,6 @@ export default function StudentLogin() {
                   Créez-en un.
                 </a>
               </p>
-              <Link
-                to="/forgot-password"
-                className="block text-sm text-blue-600 hover:underline"
-              >
-                Connectez-vous sans mot de passe.
-              </Link>
             </div>
 
             {/* Form fields */}
@@ -143,7 +88,7 @@ export default function StudentLogin() {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    placeholder="Matricule ou Mot de passe"
+                    placeholder="Votre mot de passe"
                     required
                     className="h-12 rounded-lg border-gray-300 pr-10"
                   />

@@ -16,7 +16,6 @@ import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Check, Upload, User, BookOpen, FileText, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import heroCampusBg from "@/assets/hero-bg.jpg";
-import { supabase } from "@/integrations/supabase/client";
 
 /** Niveaux proposés à l’admission (pas de L4 à l’UPG). */
 const ADMISSION_PROMOTIONS = ["L1", "L2", "L3", "M1", "M2", "Doc1", "Doc2"] as const;
@@ -99,33 +98,6 @@ const ADMISSION_SUPPORT_EMAIL = "jacquesmasuruku2@gmail.com";
 function formatAdmissionSubmitError(err: unknown): string {
   if (err instanceof Error && err.message) return err.message;
   return "Une erreur inattendue s’est produite.";
-}
-
-const ADMISSION_STORAGE_BUCKET = "images";
-const ADMISSION_STORAGE_PREFIX = "etudiants-passeports";
-
-async function uploadAdmissionFile(
-  file: File | null,
-  key: "photo" | "diplome" | "bulletin" | "attestation",
-): Promise<string | null> {
-  if (!file) return null;
-
-  const extFromName = file.name.includes(".") ? file.name.split(".").pop() : "";
-  const ext = (extFromName || file.type.split("/").pop() || "bin").replace(/[^a-zA-Z0-9]/g, "");
-  const filePath = `${ADMISSION_STORAGE_PREFIX}/${Date.now()}-${crypto.randomUUID()}-${key}.${ext || "bin"}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from(ADMISSION_STORAGE_BUCKET)
-    .upload(filePath, file, { upsert: false });
-  if (uploadError) {
-    throw new Error(`Échec upload ${key}: ${uploadError.message}`);
-  }
-
-  const { data: publicData } = supabase.storage.from(ADMISSION_STORAGE_BUCKET).getPublicUrl(filePath);
-  if (!publicData?.publicUrl) {
-    throw new Error(`URL publique introuvable pour ${key}.`);
-  }
-  return publicData.publicUrl;
 }
 
 const steps = [
@@ -230,35 +202,35 @@ const AdmissionRegistrationForm = () => {
         return;
       }
 
-      const [photo_url, diplome_url, bulletin_url, attestation_url] = await Promise.all([
-        uploadAdmissionFile(photoFile, "photo"),
-        uploadAdmissionFile(diplomeFile, "diplome"),
-        uploadAdmissionFile(bulletinFile, "bulletin"),
-        uploadAdmissionFile(attestationFile, "attestation"),
-      ]);
+      const payload = new FormData();
+      payload.append("nom", form.nom.trim());
+      payload.append("postnom", form.postnom.trim());
+      payload.append("prenom", form.prenom.trim());
+      payload.append("sexe", form.sexe);
+      payload.append("date_naissance", form.date_naissance);
+      payload.append("lieu_naissance", form.lieu_naissance.trim());
+      payload.append("nationalite", form.nationalite.trim());
+      payload.append("telephone", form.telephone.trim());
+      payload.append("email", form.email.trim());
+      payload.append("adresse", form.adresse.trim());
+      payload.append("domaine", facultyRow.label);
+      payload.append("filiere", form.filiere);
+      payload.append("promotion", form.promotion);
+      payload.append("annee_academique", form.annee_academique.trim() || "2025-2026");
+      payload.append("photo", photoFile);
+      if (diplomeFile) payload.append("diplome", diplomeFile);
+      if (bulletinFile) payload.append("bulletin", bulletinFile);
+      if (attestationFile) payload.append("attestation", attestationFile);
 
-      const { error: insertError } = await supabase.from("students").insert({
-        nom: form.nom.trim(),
-        postnom: form.postnom.trim(),
-        prenom: form.prenom.trim(),
-        sexe: form.sexe,
-        date_naissance: form.date_naissance,
-        lieu_naissance: form.lieu_naissance.trim(),
-        nationalite: form.nationalite.trim() || null,
-        telephone: form.telephone.trim(),
-        email: form.email.trim(),
-        adresse: form.adresse.trim(),
-        domaine: facultyRow.label,
-        filiere: form.filiere,
-        promotion: form.promotion,
-        annee_academique: form.annee_academique.trim() || "2025-2026",
-        status: "pending",
-        photo_url,
-        diplome_url,
-        bulletin_url,
-        attestation_url,
-      });
-      if (insertError) throw new Error(insertError.message);
+      const apiBase = (import.meta.env.VITE_ADMISSION_API_BASE || "").replace(/\/$/, "");
+      const response = await fetch(`${apiBase}/api/admissions`, { method: "POST", body: payload });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result?.studentId) {
+        throw new Error(result?.error || "Impossible d’enregistrer l’inscription.");
+      }
+
+      const studentId = String(result.studentId);
+      const emailConfirmationSent = result.emailConfirmationSent === true;
 
       // Sauvegarder les données pour la page de succès
       const successData = {
@@ -271,14 +243,18 @@ const AdmissionRegistrationForm = () => {
         filiere: form.filiere,
         promotion: form.promotion,
         dateInscription: new Date().toLocaleDateString('fr-FR'),
-        reference: `UPG-ADM-${Date.now().toString().slice(-8)}`
+        reference: result.reference || `UPG-ADM-${studentId.slice(0, 8).toUpperCase()}`,
+        studentId,
+        emailConfirmationSent,
       };
       
       localStorage.setItem('admissionSuccess', JSON.stringify(successData));
-      
-      toast.success(
-        "Inscription soumise ! Redirection vers votre confirmation...",
-      );
+
+      if (emailConfirmationSent) {
+        toast.success(`Inscription enregistrée. Confirmation envoyée à ${form.email.trim()}.`);
+      } else {
+        toast.error("Inscription enregistrée, mais l’e-mail n’a pas pu être envoyé. Vous pourrez le renvoyer depuis la page de confirmation.");
+      }
       navigate("/admission-success");
     } catch (err: unknown) {
       if (import.meta.env.DEV) console.error("[admission submit]", err);

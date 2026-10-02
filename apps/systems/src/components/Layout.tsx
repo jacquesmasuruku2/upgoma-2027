@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import {
   LayoutDashboard, Users, GraduationCap, CreditCard, BookOpen,
-  ClipboardList, Bell, MessageSquare, Menu, LogOut, FileText, UserCog, CheckCircle, Globe
+  ClipboardList, Bell, MessageSquare, Menu, LogOut, FileText, UserCog, CheckCircle, Globe, Settings
 } from 'lucide-react';
 import logoUpg from '@/assets/logo-upg.jpg';
 
@@ -27,6 +27,7 @@ const menuConfig: Record<string, { label: string; icon: any; path: string }[]> =
     { label: 'Requêtes', icon: FileText, path: '/system/requetes' },
     { label: 'Valve', icon: Bell, path: '/system/valve' },
     { label: 'Chat', icon: MessageSquare, path: '/system/chat' },
+    { label: 'Paramètres', icon: Settings, path: '/system/parametres' },
   ],
   appariteur: [
     { label: 'Tableau de bord', icon: LayoutDashboard, path: '/system/dashboard' },
@@ -36,6 +37,7 @@ const menuConfig: Record<string, { label: string; icon: any; path: string }[]> =
     { label: 'Requêtes', icon: FileText, path: '/system/requetes' },
     { label: 'Valve', icon: Bell, path: '/system/valve' },
     { label: 'Chat', icon: MessageSquare, path: '/system/chat' },
+    { label: 'Paramètres', icon: Settings, path: '/system/parametres' },
   ],
   enseignant: [
     { label: 'Présences', icon: CheckCircle, path: '/system/presences' },
@@ -44,11 +46,13 @@ const menuConfig: Record<string, { label: string; icon: any; path: string }[]> =
     { label: 'Travaux', icon: FileText, path: '/system/travaux' },
     { label: 'Valve', icon: Bell, path: '/system/valve' },
     { label: 'Chat', icon: MessageSquare, path: '/system/chat' },
+    { label: 'Paramètres', icon: Settings, path: '/system/parametres' },
   ],
   finance: [
     { label: 'Tableau de bord', icon: LayoutDashboard, path: '/system/dashboard' },
     { label: 'Paiements', icon: CreditCard, path: '/system/paiements' },
     { label: 'Chat', icon: MessageSquare, path: '/system/chat' },
+    { label: 'Paramètres', icon: Settings, path: '/system/parametres' },
   ],
   etudiant: [
     { label: 'Mon Portail', icon: Users, path: '/system/portail' },
@@ -56,6 +60,7 @@ const menuConfig: Record<string, { label: string; icon: any; path: string }[]> =
     { label: 'Valve', icon: Bell, path: '/system/valve' },
     { label: 'Requêtes', icon: FileText, path: '/system/requetes' },
     { label: 'Chat', icon: MessageSquare, path: '/system/chat' },
+    { label: 'Paramètres', icon: Settings, path: '/system/parametres' },
   ],
 };
 

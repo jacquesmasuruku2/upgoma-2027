@@ -30,7 +30,7 @@ export default function ForgotPassword() {
       toast.error('Erreur: ' + error);
     } else {
       setSent(true);
-      toast.success('Email de réinitialisation envoyé avec succès!');
+      toast.success('Si cette adresse correspond à un compte actif, un lien sera envoyé.');
     }
   };
 
@@ -56,7 +56,7 @@ export default function ForgotPassword() {
                   <p className="flex items-start gap-2">
                     <Mail className="h-4 w-4 mt-0.5 flex-shrink-0" />
                     <span>
-                      Entrez votre email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
+                      Entrez l’adresse e-mail de votre compte. Si celui-ci est actif, vous recevrez un lien de réinitialisation.
                     </span>
                   </p>
                 </div>
@@ -85,7 +85,7 @@ export default function ForgotPassword() {
                 <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg">
                   <Mail className="h-8 w-8 mx-auto mb-2 text-green-600 dark:text-green-400" />
                   <p className="text-sm text-green-800 dark:text-green-200">
-                    Un email de réinitialisation a été envoyé à <strong>{email}</strong>
+                    Si un compte actif correspond à <strong>{email}</strong>, un e-mail de réinitialisation lui sera envoyé.
                   </p>
                   <p className="text-xs text-green-700 dark:text-green-300 mt-2">
                     Vérifiez votre boîte de réception et cliquez sur le lien pour réinitialiser votre mot de passe.

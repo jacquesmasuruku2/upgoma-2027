@@ -55,15 +55,31 @@ function StartRouteHandler() {
 function AdminSetup() {
   useEffect(() => {
     const setup = async () => {
-      // Check if already set up
       const { data: existing } = await supabase.from('profiles').select('id').limit(1);
       if (existing && existing.length > 0) return;
 
-      // Create admin without affecting current session
-      const { data, error } = await supabase.functions.invoke('create-user', {
-        body: { email: 'jacquesmasuruku2@gmail.com', password: '678900', nom: 'Super Admin UPG', role: 'super_admin' }
+      const email = 'jacquesmasuruku2@gmail.com';
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password: '678900',
+        options: { data: { nom: 'Super Admin UPG' } },
       });
-      if (error) console.log('Admin setup:', error.message);
+
+      if (signUpError) {
+        console.warn('Admin setup skipped:', signUpError.message);
+        return;
+      }
+
+      const userId = signUpData.user?.id;
+      if (!userId) return;
+
+      await supabase.from('user_roles').upsert({ user_id: userId, role: 'super_admin' });
+      await supabase.from('profiles').upsert({
+        id: userId,
+        email,
+        nom: 'Super Admin UPG',
+        role: 'super_admin',
+      } as any);
     };
     setup();
   }, []);

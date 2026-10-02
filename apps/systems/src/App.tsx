@@ -25,8 +25,8 @@ import StudentAssignments from "@/pages/StudentAssignments";
 import NotFound from "@/pages/NotFound";
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import SiteManagementPage from "@/pages/SiteManagementPage";
+import Settings from "@/pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -68,25 +68,6 @@ function RegistrationRedirect() {
   );
 }
 
-// Setup initial admin on first load
-function AdminSetup() {
-  useEffect(() => {
-    const setup = async () => {
-      // Check if already set up
-      const { data: existing } = await supabase.from('profiles').select('id').limit(1);
-      if (existing && existing.length > 0) return;
-
-      // Create admin without affecting current session
-      const { data, error } = await supabase.functions.invoke('create-user', {
-        body: { email: 'jacquesmasuruku2@gmail.com', password: '678900', nom: 'Super Admin UPG', role: 'super_admin' }
-      });
-      if (error) console.log('Admin setup:', error.message);
-    };
-    setup();
-  }, []);
-  return null;
-}
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -94,7 +75,6 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AdminSetup />
           <Routes>
             <Route path="/" element={<HomeRedirect />} />
             <Route path="/login" element={<Login />} />
@@ -106,6 +86,7 @@ const App = () => (
             <Route path="/system" element={<Layout />}>
               <Route index element={<Navigate to="/system/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
+              <Route path="parametres" element={<Settings />} />
               <Route path="etudiants" element={<Students />} />
               <Route path="paiements" element={<Payments />} />
               <Route path="cours" element={<Courses />} />

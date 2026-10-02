@@ -23,6 +23,7 @@ import VideosPage from "./pages/VideosPage";
 import AcademicSystemPage from "./pages/AcademicSystemPage";
 import NotFound from "./pages/NotFound";
 import ConfirmNewsletter from "./pages/ConfirmNewsletter";
+import UnsubscribeNewsletter from "./pages/UnsubscribeNewsletter";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import AdmissionSuccessPage from "./pages/AdmissionSuccessPage";
 import PartnersPage from "./pages/PartnersPage";
@@ -104,6 +105,7 @@ const PublicChrome = () => {
             <Route path="/systeme-academique" element={<AcademicSystemPage />} />
             <Route path="/admission-success" element={<AdmissionSuccessPage />} />
             <Route path="/confirmer-newsletter" element={<ConfirmNewsletter />} />
+            <Route path="/desabonner-newsletter" element={<UnsubscribeNewsletter />} />
             <Route path="/politique-de-confidentialite" element={<PrivacyPolicyPage />} />
             <Route path="/partenaires" element={<PartnersPage />} />
             <Route path="/valve" element={<ValvePage />} />

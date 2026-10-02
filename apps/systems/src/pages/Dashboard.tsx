@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { GraduationCap, CreditCard, BookOpen, Clock, TrendingUp, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { GraduationCap, CreditCard, BookOpen, Clock, TrendingUp, Users, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   ChartContainer,
@@ -14,6 +16,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, LineCh
 const COLORS = ['#0d47a1', '#1976d2', '#42a5f5', '#90caf9', '#e53935', '#43a047'];
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({ students: 0, pending: 0, payments: 0, courses: 0 });
   const [paymentsByMonth, setPaymentsByMonth] = useState<{ month: string; montant: number }[]>([]);
   const [studentsByFiliere, setStudentsByFiliere] = useState<{ name: string; value: number }[]>([]);
@@ -113,7 +116,12 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Tableau de bord</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-2xl font-bold">Tableau de bord</h2>
+        <Button variant="outline" onClick={() => navigate('/system/parametres')}>
+          <Settings className="mr-2 h-4 w-4" /> Paramètres
+        </Button>
+      </div>
 
       {/* Summary cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

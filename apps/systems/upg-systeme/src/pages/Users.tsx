@@ -33,18 +33,39 @@ export default function Users() {
 
   const addUser = async () => {
     setLoading(true);
-    const { data, error } = await supabase.functions.invoke('create-user', {
-      body: { email: form.email, password: form.password, nom: form.nom, role: form.role }
-    });
-    setLoading(false);
-    if (error || data?.error) {
-      toast.error(data?.error || error?.message || 'Erreur');
-      return;
+    try {
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+        options: { data: { nom: form.nom } },
+      });
+
+      if (signUpError && !/already registered|already exists/i.test(signUpError.message)) {
+        throw new Error(signUpError.message);
+      }
+
+      const userId = signUpData.user?.id || (await supabase.from('profiles').select('id').eq('email', form.email).maybeSingle()).data?.id;
+      if (!userId) {
+        throw new Error('Le compte utilisateur n’a pas pu être créé.');
+      }
+
+      await supabase.from('user_roles').upsert({ user_id: userId, role: form.role as any });
+      await supabase.from('profiles').upsert({
+        id: userId,
+        email: form.email,
+        nom: form.nom,
+        role: form.role,
+      } as any);
+
+      toast.success(`Utilisateur ${form.nom} ajouté avec succès`);
+      setForm({ email: '', password: '', nom: '', role: 'appariteur' });
+      setOpen(false);
+      load();
+    } catch (err: any) {
+      toast.error(err?.message || 'Erreur');
+    } finally {
+      setLoading(false);
     }
-    toast.success(`Utilisateur ${form.nom} ajouté avec succès`);
-    setForm({ email: '', password: '', nom: '', role: 'appariteur' });
-    setOpen(false);
-    load();
   };
 
   return (

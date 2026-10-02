@@ -12,11 +12,16 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1145.0",
+    "@supabase/supabase-js": "^2.98.0",
+    "cloudinary": "^2.11.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.1",
     "express": "^5.2.1",
-    "stripe": "^17.5.0",
-    "@supabase/supabase-js": "^2.98.0"
+    "express-rate-limit": "^8.7.0",
+    "nodemailer": "^10.0.13",
+    "pg": "^8.20.0",
+    "stripe": "^17.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",

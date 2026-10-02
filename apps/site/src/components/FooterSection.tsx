@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { SUPABASE_RESOLVED_URL, supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
 const FacebookIcon = () => (
@@ -84,83 +84,27 @@ const FooterSection = () => {
     },
   });
 
-  const invokeNewsletterDirect = async (payload: { name: string; email: string }) => {
-    const anonKey = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined)?.trim();
-    if (!anonKey) {
-      throw new Error("Clé Supabase anon manquante côté frontend.");
-    }
-    const endpoint = `${SUPABASE_RESOLVED_URL.replace(/\/$/, "")}/functions/v1/newsletter-subscribe`;
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: anonKey,
-        Authorization: `Bearer ${anonKey}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const raw = await res.text();
-    let parsed: any = null;
-    try {
-      parsed = raw ? JSON.parse(raw) : null;
-    } catch {
-      parsed = null;
-    }
-
-    if (!res.ok) {
-      const message = parsed?.error || parsed?.message || raw || `HTTP ${res.status}`;
-      throw new Error(`Newsletter API [${res.status}] ${message}`);
-    }
-    return parsed || { message: "Un email de confirmation vous a été envoyé !" };
-  };
-
   const handleNewsletter = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nlName.trim() || !nlEmail.trim()) return;
     setLoading(true);
     try {
-      if (SUPABASE_RESOLVED_URL.includes("env-manquant")) {
-        throw new Error("Configuration Supabase manquante sur le frontend (URL du projet non définie).");
-      }
       const payload = { name: nlName.trim(), email: nlEmail.trim() };
-
-      // 1) Chemin standard SDK
-      let data: any = null;
-      let invokeError: any = null;
-      try {
-        const result = await supabase.functions.invoke("newsletter-subscribe", { body: payload });
-        data = result.data;
-        invokeError = result.error;
-      } catch (err) {
-        invokeError = err;
-      }
-
-      // 2) Fallback HTTP direct pour contourner les erreurs de transport SDK
-      if (invokeError) {
-        data = await invokeNewsletterDirect(payload);
-      }
+      const response = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data?.error || "Impossible de traiter l’inscription newsletter.");
 
       toast.success(data?.message || "Un email de confirmation vous a été envoyé !");
       setNlName("");
       setNlEmail("");
     } catch (err: any) {
       const raw = String(err?.message || "");
-      const isTransportError =
-        /Failed to send a request to the Edge Function/i.test(raw) ||
-        /FunctionsFetchError/i.test(raw);
-
-      if (isTransportError) {
-        toast.error(
-          "Impossible de joindre la fonction newsletter. Vérifie le déploiement de `newsletter-subscribe` et que le projet Supabase frontend est le bon.",
-        );
-      } else {
-        toast.error(raw || "Une erreur est survenue. Réessayez.");
-      }
-      console.error("[newsletter] subscribe failed", {
-        error: err,
-        supabaseUrl: SUPABASE_RESOLVED_URL,
-      });
+      toast.error(raw || "Une erreur est survenue. Réessayez.");
+      console.error("[newsletter] subscribe failed", err);
     } finally {
       setLoading(false);
     }

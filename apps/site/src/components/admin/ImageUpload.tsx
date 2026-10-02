@@ -29,7 +29,14 @@ const ImageUpload = ({ value, onChange, folder }: ImageUploadProps) => {
             ? err
             : "Erreur lors de l'upload (détail dans la console).";
       console.error("[ImageUpload] Upload failed:", err);
-      toast.error(msg);
+      if (msg.includes("migration hors Supabase") || msg.includes("désactivé pendant")) {
+        toast.warning("Le stockage d'image est temporairement désactivé pendant la migration hors Supabase. Pour continuer, collez simplement l'URL de l'image dans le champ ci-dessous.");
+      } else {
+        toast.error(msg);
+      }
+      if (fileRef.current) {
+        fileRef.current.value = "";
+      }
     } finally {
       setUploading(false);
     }

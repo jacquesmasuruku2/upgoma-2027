@@ -4,6 +4,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import logoUpg from '@/assets/logo-upg.jpg';
 import AdminPage from '@site/pages/AdminPage';
 import SiteManagementDashboard from '@/pages/SiteManagementDashboard';
+import Settings from '@/pages/Settings';
 
 const SECTION_BY_SLUG: Record<string, string> = {
   dashboard: 'dashboard',
@@ -36,6 +37,8 @@ const SECTION_BY_SLUG: Record<string, string> = {
   partenaires: 'partenaires',
   partner: 'partenaires',
   partners: 'partenaires',
+  parametres: 'settings',
+  newsletter: 'newsletter',
 };
 
 const CANONICAL_SLUG_BY_SECTION: Record<string, string> = {
@@ -51,6 +54,7 @@ const CANONICAL_SLUG_BY_SECTION: Record<string, string> = {
   services: 'services',
   bibliotheque: 'bibliotheque',
   partenaires: 'partenaires',
+  newsletter: 'newsletter',
 };
 
 export default function SiteManagementPage() {
@@ -75,6 +79,8 @@ export default function SiteManagementPage() {
       </div>
     );
   }
+
+  if (activeSection === 'settings') return <Settings />;
 
   if (!activeSection) {
     return <Navigate to="/gestion-site/dashboard" replace />;

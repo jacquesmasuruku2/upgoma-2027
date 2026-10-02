@@ -23,14 +23,14 @@ import {
   Video,
   KeyRound,
   Handshake,
+  MailCheck,
 } from "lucide-react";
 import { LOGO_UPG_SRC } from "@site/lib/brand";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import type { Session } from "@supabase/supabase-js";
 import type { Tables } from "@/integrations/supabase/types";
+import { authRequest } from "@/lib/authApi";
 import { isEmailAllowedForAdminPortal } from "@site/config/adminAuth";
-import { SITE_URL } from "@site/config/seo";
 import AdminPersonnel from "@site/components/admin/AdminPersonnel";
 import AdminBlog from "@site/components/admin/AdminBlog";
 import AdminGallery from "@site/components/admin/AdminGallery";
@@ -42,29 +42,8 @@ import AdminServices from "@site/components/admin/AdminServices";
 import AdminLibrary from "@site/components/admin/AdminLibrary";
 import AdminVideos from "@site/components/admin/AdminVideos";
 import AdminPartners from "@site/components/admin/AdminPartners";
+import AdminNewsletter from "@site/components/admin/AdminNewsletter";
 import type { ReactNode } from "react";
-
-/** Erreur serveur Supabase (SMTP / quota), pas un problème d’URL de redirection. */
-function toastMagicLinkSendFailure(err: unknown) {
-  console.error("[Admin OTP] signInWithOtp:", err);
-  const msg =
-    err && typeof err === "object" && "message" in err
-      ? String((err as { message: string }).message)
-      : "";
-  const looksLikeSmtp =
-    /magic link|sending.*email|smtp|mailer|email.*send/i.test(msg) ||
-    msg === "Error sending magic link email";
-
-  if (looksLikeSmtp) {
-    toast.error("Envoi d’e-mail refusé par Supabase", {
-      description:
-        "À configurer dans le projet Supabase : Authentication → Emails (SMTP personnalisé : Resend, SendGrid, etc.), quotas et journaux Logs → Auth. Les URL de redirection ne corrigent pas cette erreur.",
-      duration: 18_000,
-    });
-    return;
-  }
-  toast.error(msg || "Impossible d’envoyer le lien de connexion.");
-}
 
 interface AdminPageProps {
   authorized?: boolean;
@@ -83,8 +62,9 @@ const AdminPage = ({
   dashboard,
   onSectionChange,
 }: AdminPageProps) => {
+  type AdminSession = { user: { id: string; email: string; role: string } };
   type UserRole = Tables<"user_roles">;
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<AdminSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [email, setEmail] = useState("");
@@ -103,55 +83,29 @@ const AdminPage = ({
   const [newRole, setNewRole] = useState<"admin" | "moderator" | "user">("moderator");
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user) {
-        checkAdminRole(session.user.id);
-      } else {
-        setIsAdmin(null);
-        setLoading(false);
-      }
-    });
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      if (data.session?.user) {
-        checkAdminRole(data.session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const checkAdminRole = async (userId: string) => {
     if (authorized) {
       setIsAdmin(true);
       setLoading(false);
       return;
     }
 
-    try {
-      const { data, error } = await supabase.rpc('has_role', {
-        _user_id: userId,
-        _role: 'admin'
-      });
-      if (error) throw error;
-      setIsAdmin(data === true);
-    } catch (err) {
-      console.error("Role check failed:", err);
-      setIsAdmin(false);
-    } finally {
-      setLoading(false);
-    }
-  };
+    let active = true;
+    authRequest<{ user: AdminSession['user'] }>('/api/auth/session')
+      .then(({ user }) => {
+        if (!active) return;
+        setSession({ user });
+        setIsAdmin(user.role === 'super_admin');
+      })
+      .catch(() => {
+        if (!active) return;
+        setSession(null);
+        setIsAdmin(false);
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [authorized]);
 
   const normalizedEmail = email.trim().toLowerCase();
-  /** Toujours l’origine réelle du navigateur : le lien magique doit renvoyer sur le même domaine que la page (ex. .org vs .online), sinon Supabase rejette ou redirige vers une URL hors allowlist. */
-  const adminRedirectBase =
-    typeof window !== "undefined" && window.location?.origin
-      ? window.location.origin
-      : SITE_URL;
-
   const handlePasswordSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!normalizedEmail) {
@@ -168,18 +122,16 @@ const AdminPage = ({
     }
     setLoggingIn(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
-        password,
+      const { user } = await authRequest<{ user: AdminSession['user'] }>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: normalizedEmail, password, role: 'super_admin' }),
       });
-      if (error) throw error;
+      setSession({ user });
+      setIsAdmin(user.role === 'super_admin');
       toast.success("Connexion réussie.");
       setPassword("");
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === "object" && "message" in err
-          ? String((err as { message: string }).message)
-          : "Identifiants incorrects ou compte introuvable.";
+      const msg = err instanceof Error ? err.message : "Identifiants incorrects ou compte introuvable.";
       toast.error(msg);
     } finally {
       setLoggingIn(false);
@@ -198,26 +150,22 @@ const AdminPage = ({
     }
     setLoggingIn(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: normalizedEmail,
-        options: {
-          shouldCreateUser: true,
-          // Force la redirection vers ton domaine (évite un lien "lovable" venant d’une config Supabase ancienne).
-          emailRedirectTo: `${adminRedirectBase}/gestion-site`,
-        },
+      await authRequest('/api/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: normalizedEmail }),
       });
-      if (error) throw error;
-      toast.success("Vérifiez votre boîte de réception.");
+      toast.success("Si le compte existe, un lien de réinitialisation vous sera envoyé.");
       setAuthStep("sent");
     } catch (err: unknown) {
-      toastMagicLinkSendFailure(err);
+      toast.error(err instanceof Error ? err.message : "Impossible d’envoyer le lien.");
     } finally {
       setLoggingIn(false);
     }
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await authRequest('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    setSession(null);
     setIsAdmin(null);
     toast.success("Déconnexion réussie");
   };
@@ -615,6 +563,7 @@ const AdminPage = ({
     { id: "services", label: "Services", icon: BriefcaseBusiness },
     { id: "bibliotheque", label: "Bibliothèque", icon: Library },
     { id: "partenaires", label: "Partenaires", icon: Handshake },
+    { id: "newsletter", label: "Newsletter", icon: MailCheck },
     ...(!authorized ? [{ id: "utilisateurs", label: "Utilisateurs & Rôles", icon: UserCog }] : []),
   ];
 
@@ -712,6 +661,7 @@ const AdminPage = ({
             {activeTab === "services" && <AdminServices />}
             {activeTab === "bibliotheque" && <AdminLibrary />}
             {activeTab === "partenaires" && <AdminPartners />}
+            {activeTab === "newsletter" && <AdminNewsletter />}
             {!authorized && activeTab === "utilisateurs" && (
               <div className="space-y-6">
                 <div className="rounded-xl border border-border bg-muted/20 p-5">
