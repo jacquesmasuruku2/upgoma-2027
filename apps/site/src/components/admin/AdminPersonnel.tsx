@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { usePersonnel, useUpsertPersonnel, useDeletePersonnel } from "@/hooks/useSupabaseData";
+import { usePersonnel, useUpsertPersonnel, useDeletePersonnel } from "@site/hooks/useSupabaseData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

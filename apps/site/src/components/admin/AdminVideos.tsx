@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ImageUpload from "./ImageUpload";
 import VideoUpload from "./VideoUpload";
-import { useDeleteVideo, useUpsertVideo, useVideos } from "@/hooks/useSupabaseData";
+import { useDeleteVideo, useUpsertVideo, useVideos } from "@site/hooks/useSupabaseData";
 
 interface FormData {
   id?: string;

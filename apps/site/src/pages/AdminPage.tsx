@@ -24,24 +24,24 @@ import {
   KeyRound,
   Handshake,
 } from "lucide-react";
-import { LOGO_UPG_SRC } from "@/lib/brand";
+import { LOGO_UPG_SRC } from "@site/lib/brand";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 import type { Tables } from "@/integrations/supabase/types";
-import { isEmailAllowedForAdminPortal } from "@/config/adminAuth";
-import { SITE_URL } from "@/config/seo";
-import AdminPersonnel from "@/components/admin/AdminPersonnel";
-import AdminBlog from "@/components/admin/AdminBlog";
-import AdminGallery from "@/components/admin/AdminGallery";
-import AdminCollege from "@/components/admin/AdminCollege";
-import AdminCalendar from "@/components/admin/AdminCalendar";
-import AdminFees from "@/components/admin/AdminFees";
-import AdminFaculties from "@/components/admin/AdminFaculties";
-import AdminServices from "@/components/admin/AdminServices";
-import AdminLibrary from "@/components/admin/AdminLibrary";
-import AdminVideos from "@/components/admin/AdminVideos";
-import AdminPartners from "@/components/admin/AdminPartners";
+import { isEmailAllowedForAdminPortal } from "@site/config/adminAuth";
+import { SITE_URL } from "@site/config/seo";
+import AdminPersonnel from "@site/components/admin/AdminPersonnel";
+import AdminBlog from "@site/components/admin/AdminBlog";
+import AdminGallery from "@site/components/admin/AdminGallery";
+import AdminCollege from "@site/components/admin/AdminCollege";
+import AdminCalendar from "@site/components/admin/AdminCalendar";
+import AdminFees from "@site/components/admin/AdminFees";
+import AdminFaculties from "@site/components/admin/AdminFaculties";
+import AdminServices from "@site/components/admin/AdminServices";
+import AdminLibrary from "@site/components/admin/AdminLibrary";
+import AdminVideos from "@site/components/admin/AdminVideos";
+import AdminPartners from "@site/components/admin/AdminPartners";
 
 /** Erreur serveur Supabase (SMTP / quota), pas un problème d’URL de redirection. */
 function toastMagicLinkSendFailure(err: unknown) {
@@ -65,7 +65,7 @@ function toastMagicLinkSendFailure(err: unknown) {
   toast.error(msg || "Impossible d’envoyer le lien de connexion.");
 }
 
-const AdminPage = () => {
+const AdminPage = ({ authorized = false, logoSrc = LOGO_UPG_SRC }: { authorized?: boolean; logoSrc?: string }) => {
   type UserRole = Tables<"user_roles">;
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -106,6 +106,12 @@ const AdminPage = () => {
   }, []);
 
   const checkAdminRole = async (userId: string) => {
+    if (authorized) {
+      setIsAdmin(true);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase.rpc('has_role', {
         _user_id: userId,
@@ -179,7 +185,7 @@ const AdminPage = () => {
         options: {
           shouldCreateUser: true,
           // Force la redirection vers ton domaine (évite un lien "lovable" venant d’une config Supabase ancienne).
-          emailRedirectTo: `${adminRedirectBase}/admin`,
+          emailRedirectTo: `${adminRedirectBase}/gestion-site`,
         },
       });
       if (error) throw error;
@@ -337,7 +343,7 @@ const AdminPage = () => {
     );
   }
 
-  if (!session) {
+  if (!session && !authorized) {
     return (
       <div className="min-h-screen relative flex items-center justify-center px-4 overflow-hidden bg-[hsl(215,30%,8%)]">
         {/* Animated background elements */}
@@ -358,7 +364,7 @@ const AdminPage = () => {
           <div className="flex justify-center mb-8">
             <div className="relative">
               <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-2xl shadow-[hsl(25,90%,55%,0.3)] rotate-3 hover:rotate-0 transition-transform duration-500">
-                <img src={LOGO_UPG_SRC} alt="Logo UPG" className="w-full h-full object-cover" />
+                <img src={logoSrc} alt="Logo UPG" className="w-full h-full object-cover" />
               </div>
               <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[hsl(145,60%,45%)] border-4 border-[hsl(215,30%,8%)] flex items-center justify-center">
                 <Lock className="w-3 h-3 text-white" />
@@ -552,7 +558,7 @@ const AdminPage = () => {
   }
 
   // User is authenticated but NOT admin
-  if (isAdmin === false) {
+  if (isAdmin === false && !authorized) {
     return (
       <div className="min-h-screen relative flex items-center justify-center px-4 overflow-hidden bg-[hsl(215,30%,8%)]">
         <div className="w-full max-w-[420px] text-center animate-fade-in">
@@ -589,28 +595,30 @@ const AdminPage = () => {
     { id: "services", label: "Services", icon: BriefcaseBusiness },
     { id: "bibliotheque", label: "Bibliothèque", icon: Library },
     { id: "partenaires", label: "Partenaires", icon: Handshake },
-    { id: "utilisateurs", label: "Utilisateurs & Rôles", icon: UserCog },
+    ...(!authorized ? [{ id: "utilisateurs", label: "Utilisateurs & Rôles", icon: UserCog }] : []),
   ];
 
   return (
-    <div className="min-h-screen bg-[hsl(210,30%,12%)] flex flex-col">
+    <div className="min-h-screen bg-[#edf2ed] flex flex-col text-[#20352d]">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-[hsl(210,70%,20%)]/95 backdrop-blur text-white px-3 py-3 sm:px-4 sm:py-4 flex items-center justify-between gap-3 shadow-lg border-b border-white/10">
+      <header className="sticky top-0 z-40 bg-[#153d33] text-white px-3 py-3 sm:px-4 sm:py-4 flex items-center justify-between gap-3 shadow-md border-b border-white/10">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <img src={LOGO_UPG_SRC} alt="Logo UPG" className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-cover shrink-0" />
+          <img src={logoSrc} alt="Logo UPG" className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-cover shrink-0" />
           <h1 className="text-base sm:text-xl font-bold tracking-wide truncate">
-            <span className="text-orange-400">UPG</span> Administration
+            <span className="text-[#f0c46b]">UPG</span> Administration
           </h1>
         </div>
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={handleLogout}
-          className="bg-red-600 hover:bg-red-700 text-white font-semibold px-3 sm:px-5 py-2 shadow-md shrink-0"
-        >
-          <LogOut className="w-4 h-4 sm:mr-2" />
-          <span className="hidden sm:inline">Déconnexion</span>
-        </Button>
+        {!authorized && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleLogout}
+            className="bg-red-600 hover:bg-red-700 text-white font-semibold px-3 sm:px-5 py-2 shadow-md shrink-0"
+          >
+            <LogOut className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Déconnexion</span>
+          </Button>
+        )}
       </header>
 
       <main className="mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-24 lg:pb-6 max-w-full w-full flex-1">
@@ -621,15 +629,15 @@ const AdminPage = () => {
             onMouseEnter={() => setIsSidebarExpanded(true)}
             onMouseLeave={() => setIsSidebarExpanded(false)}
           >
-            <div className="bg-[hsl(210,40%,18%)]/95 backdrop-blur rounded-xl p-2 flex flex-row lg:flex-col gap-1.5 shadow-md border border-white/10 overflow-x-auto lg:overflow-visible no-scrollbar">
+            <div className="bg-[#1d4b3e]/95 backdrop-blur rounded-xl p-2 flex flex-row lg:flex-col gap-1.5 shadow-md border border-[#12372e]/15 overflow-x-auto lg:overflow-visible no-scrollbar">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`w-auto lg:w-full min-w-fit px-3 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 lg:gap-3 ${
                     activeTab === tab.id
-                      ? "bg-[hsl(199,89%,48%)] text-white shadow-md"
-                      : "text-gray-300 hover:bg-[hsl(210,40%,25%)] hover:text-white"
+                      ? "bg-[#f0c46b] text-[#20352d] shadow-sm"
+                      : "text-white/75 hover:bg-white/10 hover:text-white"
                   }`}
                   title={tab.label}
                 >
@@ -660,7 +668,7 @@ const AdminPage = () => {
             {activeTab === "services" && <AdminServices />}
             {activeTab === "bibliotheque" && <AdminLibrary />}
             {activeTab === "partenaires" && <AdminPartners />}
-            {activeTab === "utilisateurs" && (
+            {!authorized && activeTab === "utilisateurs" && (
               <div className="space-y-6">
                 <div className="rounded-xl border border-border bg-muted/20 p-5">
                   <div className="flex items-center gap-2 mb-2">
@@ -765,7 +773,7 @@ const AdminPage = () => {
       </main>
 
       {/* Mobile bottom tab bar */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[hsl(210,40%,18%)]/95 backdrop-blur">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/15 bg-[#153d33] shadow-[0_-8px_24px_rgba(18,55,46,0.14)]">
         <div className="px-2 py-2 overflow-x-auto no-scrollbar">
           <div className="flex items-center gap-1.5 min-w-max">
             {tabs.map((tab) => (
@@ -774,8 +782,8 @@ const AdminPage = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap inline-flex items-center gap-1.5 transition-colors ${
                   activeTab === tab.id
-                    ? "bg-[hsl(199,89%,48%)] text-white"
-                    : "text-gray-300 hover:bg-[hsl(210,40%,25%)] hover:text-white"
+                    ? "bg-[#f0c46b] text-[#20352d]"
+                    : "text-white/75 hover:bg-white/10 hover:text-white"
                 }`}
                 title={tab.label}
               >
@@ -786,7 +794,7 @@ const AdminPage = () => {
           </div>
         </div>
       </nav>
-      <footer className="text-center text-xs text-[hsl(210,20%,70%)] py-4 border-t border-white/10 bg-[hsl(210,30%,10%)]">
+      <footer className="text-center text-xs text-[#c1d2ca] py-4 border-t border-white/10 bg-[#102e27]">
         © {new Date().getFullYear()} Université Polytechnique de Goma || All rights reserved — Jacques MASURUKU
       </footer>
     </div>

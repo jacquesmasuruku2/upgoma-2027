@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useCalendarEvents, useUpsertCalendarEvent, useDeleteCalendarEvent } from "@/hooks/useSupabaseData";
+import { useCalendarEvents, useUpsertCalendarEvent, useDeleteCalendarEvent } from "@site/hooks/useSupabaseData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

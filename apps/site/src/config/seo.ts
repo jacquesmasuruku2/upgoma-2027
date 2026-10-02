@@ -79,11 +79,6 @@ export const routeSeo: Record<string, SeoMeta> = {
     title: "Inscription Réussie | Université Polytechnique de Goma",
     description: "Félicitations ! Votre inscription à l'Université Polytechnique de Goma a été confirmée. Téléchargez votre attestation et découvrez les prochaines étapes.",
   },
-  "/admin": {
-    title: "Administration",
-    description: "Espace réservé — non indexé.",
-    noindex: true,
-  },
 };
 
 /** Routes valides côté app (hors 404) — pour meta robots sur URLs inconnues */

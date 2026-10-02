@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGallery, useUpsertGallery, useDeleteGallery } from "@/hooks/useSupabaseData";
+import { useGallery, useUpsertGallery, useDeleteGallery } from "@site/hooks/useSupabaseData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ImageUpload from "./ImageUpload";

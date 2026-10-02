@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Pencil, Trash2, Plus, X } from "lucide-react";
-import { useAllFacultyContent, useUpsertFacultyContent, useDeleteFacultyContent } from "@/hooks/useSupabaseData";
-import { FACULTY_DEFAULT_DEPARTMENTS } from "@/config/facultyDefaults";
+import { useAllFacultyContent, useUpsertFacultyContent, useDeleteFacultyContent } from "@site/hooks/useSupabaseData";
+import { FACULTY_DEFAULT_DEPARTMENTS } from "@site/config/facultyDefaults";
 import ImageUpload from "./ImageUpload";
 
 /** Découpe une saisie multi-lignes ou séparée par des points-virgules. */

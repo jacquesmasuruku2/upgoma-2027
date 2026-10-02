@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useBlogArticles, useUpsertBlogArticle, useDeleteBlogArticle } from "@/hooks/useSupabaseData";
+import { useBlogArticles, useUpsertBlogArticle, useDeleteBlogArticle } from "@site/hooks/useSupabaseData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

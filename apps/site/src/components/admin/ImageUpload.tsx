@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Upload, X, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { uploadImage } from "@/hooks/useSupabaseData";
+import { uploadImage } from "@site/hooks/useSupabaseData";
 import { toast } from "sonner";
 
 interface ImageUploadProps {

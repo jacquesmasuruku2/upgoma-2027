@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Trash2, Plus, Edit, FileUp, FileText } from "lucide-react";
-import { useFees, useUpsertFee, useDeleteFee, uploadImage } from "@/hooks/useSupabaseData";
+import { useFees, useUpsertFee, useDeleteFee, uploadImage } from "@site/hooks/useSupabaseData";
 import { toast } from "sonner";
 
 const AdminFees = () => {

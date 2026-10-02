@@ -1,17 +1,12 @@
 import { useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Si l'utilisateur admin clique un lien magic/OTP, Supabase peut rediriger sur la
- * page d'accueil (sans /admin) selon la config.
- * On redirige alors automatiquement vers `/admin` une seule fois après un callback
- * (présence de tokens dans `hash`/`search`), quand l'utilisateur a le rôle admin.
+ * Les liens de connexion admin doivent aboutir dans le système local, pas sur une route publique du site.
  */
 export default function AdminAuthRedirect() {
   const location = useLocation();
-  const navigate = useNavigate();
-
   const lastRedirectUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -42,9 +37,9 @@ export default function AdminAuthRedirect() {
 
       if (!error && isAdmin === true) {
         lastRedirectUserIdRef.current = userId;
-        // Si on n'est pas déjà sur /admin, on y va.
+        // On évite la route publique /admin et on redirige vers le système local.
         if (!location.pathname.startsWith("/admin")) {
-          navigate("/admin", { replace: true });
+          window.location.href = "http://localhost:5174/gestion-site";
         }
       }
     })().catch(() => {
@@ -54,7 +49,7 @@ export default function AdminAuthRedirect() {
     return () => {
       isCancelled = true;
     };
-  }, [location.hash, location.search, location.pathname, navigate]);
+  }, [location.hash, location.search, location.pathname]);
 
   return null;
 }

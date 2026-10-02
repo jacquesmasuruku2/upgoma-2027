@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLibraryBooks, useUpsertLibraryBook, useDeleteLibraryBook, uploadImage } from "@/hooks/useSupabaseData";
+import { useLibraryBooks, useUpsertLibraryBook, useDeleteLibraryBook, uploadImage } from "@site/hooks/useSupabaseData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

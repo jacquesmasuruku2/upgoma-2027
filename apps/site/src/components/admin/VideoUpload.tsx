@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Upload, X, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { uploadVideo } from "@/hooks/useSupabaseData";
+import { uploadVideo } from "@site/hooks/useSupabaseData";
 import { toast } from "sonner";
 
 interface VideoUploadProps {

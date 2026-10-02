@@ -1,4 +1,4 @@
-import { SITE_URL } from "@/config/seo";
+import { SITE_URL } from "../config/seo";
 
 /**
  * Logo principal UPG — fichier **`public/logo-upg.jpg`** (servi à la racine du site).

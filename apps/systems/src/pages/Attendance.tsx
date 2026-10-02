@@ -10,14 +10,24 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Download, QrCode, CheckCircle2, XCircle, ClipboardCheck } from 'lucide-react';
+import { Download, QrCode, CheckCircle2 } from 'lucide-react';
+import { buildAttendanceReport, type AttendanceReportType } from '@/lib/attendanceReports';
 
 const SESSION_TYPES = [
   { value: 'tp', label: 'TP / Laboratoire' },
   { value: 'cours', label: 'Cours théorique' },
+];
+
+const REPORT_TYPES: { value: AttendanceReportType; label: string }[] = [
+  { value: 'daily', label: 'Journalier' },
+  { value: '3days', label: '3 jours' },
+  { value: 'weekly', label: 'Hebdomadaire' },
+  { value: 'monthly', label: 'Mensuel' },
+  { value: 'quarterly', label: 'Trimestre' },
+  { value: 'course', label: 'Par cours' },
 ];
 
 interface AttendanceRecord {
@@ -36,6 +46,7 @@ export default function Attendance() {
   const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [selectedCourse, setSelectedCourse] = useState('');
   const [sessionType, setSessionType] = useState('tp');
   const [sessionDate, setSessionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -44,6 +55,9 @@ export default function Attendance() {
   const [qrStudent, setQrStudent] = useState<Student | null>(null);
   const [codeToValidate, setCodeToValidate] = useState('');
   const [loading, setLoading] = useState(false);
+  const [reportType, setReportType] = useState<AttendanceReportType>('daily');
+  const [reportDate, setReportDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [reportCourse, setReportCourse] = useState('all');
 
   const sessionKey = useMemo(
     () => `${selectedCourse}:${sessionType}:${sessionDate}`,
@@ -57,6 +71,15 @@ export default function Attendance() {
       return;
     }
     setCourses((data as Course[]) || []);
+  };
+
+  const loadAttendanceRecords = async () => {
+    const { data, error } = await supabase.from('attendances').select('*');
+    if (error) {
+      setAttendanceRecords([]);
+      return;
+    }
+    setAttendanceRecords((data as AttendanceRecord[]) || []);
   };
 
   const loadStudents = async () => {
@@ -112,11 +135,21 @@ export default function Attendance() {
 
   useEffect(() => {
     loadCourses();
+    loadAttendanceRecords();
   }, []);
 
   useEffect(() => {
     loadStudents();
   }, [selectedCourse, sessionType, sessionDate, courses]);
+
+  const reportData = useMemo(() => {
+    return buildAttendanceReport(attendanceRecords, {
+      reportType,
+      anchorDate: new Date(reportDate),
+      courseId: reportCourse === 'all' ? undefined : reportCourse,
+      courses,
+    });
+  }, [attendanceRecords, reportType, reportDate, reportCourse, courses]);
 
   const changeStatus = (studentId: string, status: 'present' | 'absent') => {
     setAttendance((prev) => ({
@@ -157,6 +190,7 @@ export default function Attendance() {
     }
     toast.success('Présences enregistrées');
     loadStudents();
+    loadAttendanceRecords();
   };
 
   const buildQrCodeValue = (studentId: string) =>
@@ -213,6 +247,8 @@ export default function Attendance() {
     link.remove();
     URL.revokeObjectURL(url);
   };
+
+  const reportRows = reportType === 'course' ? reportData.courseBreakdown : reportData.periods;
 
   return (
     <div className="space-y-6">
@@ -289,6 +325,100 @@ export default function Attendance() {
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle>Rapports de présence</CardTitle>
+              <p className="text-sm text-muted-foreground">Période : {reportData.rangeLabel}</p>
+            </div>
+            <div className="flex flex-col gap-2 md:flex-row md:items-center">
+              <Select value={reportType} onValueChange={(value) => setReportType(value as AttendanceReportType)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {REPORT_TYPES.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} className="w-[180px]" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="rounded-xl border bg-muted/20 p-4">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Total</p>
+              <p className="mt-2 text-2xl font-bold">{reportData.summary.total}</p>
+            </div>
+            <div className="rounded-xl border bg-emerald-500/10 p-4">
+              <p className="text-xs uppercase tracking-wide text-emerald-700">Présents</p>
+              <p className="mt-2 text-2xl font-bold text-emerald-700">{reportData.summary.present}</p>
+            </div>
+            <div className="rounded-xl border bg-red-500/10 p-4">
+              <p className="text-xs uppercase tracking-wide text-red-700">Absents</p>
+              <p className="mt-2 text-2xl font-bold text-red-700">{reportData.summary.absent}</p>
+            </div>
+            <div className="rounded-xl border bg-primary/10 p-4">
+              <p className="text-xs uppercase tracking-wide text-primary">Taux</p>
+              <p className="mt-2 text-2xl font-bold text-primary">{reportData.summary.rate}%</p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-[1fr_220px]">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{reportType === 'course' ? 'Cours' : 'Période'}</TableHead>
+                    <TableHead>Présents</TableHead>
+                    <TableHead>Absents</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Taux</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reportRows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                        Aucune donnée de présence pour cette période.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    reportRows.map((row: any) => (
+                      <TableRow key={reportType === 'course' ? row.courseId : row.start}>
+                        <TableCell>{reportType === 'course' ? row.courseName : row.label}</TableCell>
+                        <TableCell>{row.present}</TableCell>
+                        <TableCell>{row.absent}</TableCell>
+                        <TableCell>{row.total}</TableCell>
+                        <TableCell>{row.rate}%</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Filtre par cours</Label>
+              <Select value={reportCourse} onValueChange={setReportCourse}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tous les cours" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les cours</SelectItem>
+                  {courses.map((course) => (
+                    <SelectItem key={course.id} value={course.id}>{course.nom}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

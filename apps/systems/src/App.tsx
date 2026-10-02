@@ -25,6 +25,8 @@ import StudentAssignments from "@/pages/StudentAssignments";
 import NotFound from "@/pages/NotFound";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import SystemHome from "@/pages/SystemHome";
+import SiteManagementPage from "@/pages/SiteManagementPage";
 
 const queryClient = new QueryClient();
 
@@ -71,11 +73,13 @@ const App = () => (
         <AuthProvider>
           <AdminSetup />
           <Routes>
-            <Route path="/" element={<Login />} />
+            <Route path="/" element={<SystemHome />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/login-etudiant" element={<StudentLogin />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/inscription" element={<RegistrationRedirect />} />
+            <Route path="/gestion-site" element={<SiteManagementPage />} />
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/etudiants" element={<Students />} />

@@ -4,7 +4,7 @@
 //   VITE_SUPABASE_PUBLISHABLE_KEY → clé anon
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
-import { getStorageForSupabase } from '@/lib/safeStorage';
+import { getStorageForSupabase } from '../../lib/safeStorage';
 
 const envUrl = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim();
 const envProjectId = (import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined)?.trim();

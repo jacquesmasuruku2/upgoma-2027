@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Pencil, Trash2, Plus } from "lucide-react";
-import { usePartners, useUpsertPartner, useDeletePartner } from "@/hooks/useSupabaseData";
+import { usePartners, useUpsertPartner, useDeletePartner } from "@site/hooks/useSupabaseData";
 import ImageUpload from "./ImageUpload";
 
 const AdminPartners = () => {

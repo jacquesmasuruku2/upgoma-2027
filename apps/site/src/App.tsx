@@ -13,7 +13,6 @@ import PersonnelPage from "./pages/PersonnelPage";
 import BlogPage from "./pages/BlogPage";
 import CollegeEtudiantsPage from "./pages/CollegeEtudiantsPage";
 import AboutPage from "./pages/AboutPage";
-import AdminPage from "./pages/AdminPage";
 import GalleryPage from "./pages/GalleryPage";
 import FeesPage from "./pages/FeesPage";
 import FacultyPage from "./pages/FacultyPage";
@@ -34,7 +33,6 @@ import CheckoutSuccessPage from "./pages/CheckoutSuccessPage";
 import CheckoutCancelPage from "./pages/CheckoutCancelPage";
 import Seo from "@/components/Seo";
 import StructuredData from "@/components/StructuredData";
-import AdminAuthRedirect from "@/components/AdminAuthRedirect";
 
 /** Chunk séparé : une erreur sur le formulaire d’admission ne doit pas bloquer tout le site. */
 const AdmissionPage = lazy(() => import("./pages/AdmissionPage"));
@@ -66,16 +64,14 @@ const RouteChangeTracker = () => {
 /** TopBar une seule fois (évite de recréer Google Translate à chaque changement de route). */
 const PublicChrome = () => {
   const { pathname } = useLocation();
-  const hideTopBar = pathname.startsWith("/admin") || 
-                      pathname.startsWith("/checkout") ||
+  const hideTopBar = pathname.startsWith("/checkout") ||
                       pathname.startsWith("/admission");
   return (
     <>
-      {/* Toujours monté : masqué sur /admin, /checkout et /admission pour éviter les conflits DOM avec Google Translate */}
+      {/* Toujours monté : masqué sur /checkout et /admission pour éviter les conflits DOM avec Google Translate */}
       <div className={hideTopBar ? "hidden" : undefined} aria-hidden={hideTopBar}>
         <TopBar />
       </div>
-      <AdminAuthRedirect />
       <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/faq" element={<FAQ />} />
@@ -106,7 +102,6 @@ const PublicChrome = () => {
             <Route path="/services" element={<ServicesPage />} />
             <Route path="/service/:slug" element={<ServicePage />} />
             <Route path="/systeme-academique" element={<AcademicSystemPage />} />
-            <Route path="/admin" element={<AdminPage />} />
             <Route path="/admission-success" element={<AdmissionSuccessPage />} />
             <Route path="/confirmer-newsletter" element={<ConfirmNewsletter />} />
             <Route path="/politique-de-confidentialite" element={<PrivacyPolicyPage />} />
