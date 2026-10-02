@@ -30,7 +30,6 @@ const menuConfig: Record<string, { label: string; icon: any; path: string }[]> =
   ],
   appariteur: [
     { label: 'Tableau de bord', icon: LayoutDashboard, path: '/dashboard' },
-    { label: 'Gestion du site', icon: Globe, path: '/gestion-site' },
     { label: 'Présences', icon: CheckCircle, path: '/presences' },
     { label: 'Étudiants', icon: GraduationCap, path: '/etudiants' },
     { label: 'Notes', icon: ClipboardList, path: '/notes' },
@@ -39,7 +38,6 @@ const menuConfig: Record<string, { label: string; icon: any; path: string }[]> =
     { label: 'Chat', icon: MessageSquare, path: '/chat' },
   ],
   enseignant: [
-    { label: 'Gestion du site', icon: Globe, path: '/gestion-site' },
     { label: 'Présences', icon: CheckCircle, path: '/presences' },
     { label: 'Cours', icon: BookOpen, path: '/cours' },
     { label: 'Notes', icon: ClipboardList, path: '/notes' },

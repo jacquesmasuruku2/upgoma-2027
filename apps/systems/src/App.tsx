@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import Login from "@/pages/Login";
@@ -24,11 +24,25 @@ import Assignments from "@/pages/Assignments";
 import StudentAssignments from "@/pages/StudentAssignments";
 import NotFound from "@/pages/NotFound";
 import { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import SystemHome from "@/pages/SystemHome";
 import SiteManagementPage from "@/pages/SiteManagementPage";
 
 const queryClient = new QueryClient();
+
+function HomeRedirect() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-muted/40 text-muted-foreground">Chargement...</div>;
+  }
+
+  const destination = user
+    ? user.role === 'etudiant' ? '/portail' : '/dashboard'
+    : '/login';
+
+  return <Navigate to={destination} replace />;
+}
 
 // Redirect component for /inscription to main site admission page
 function RegistrationRedirect() {
@@ -73,7 +87,7 @@ const App = () => (
         <AuthProvider>
           <AdminSetup />
           <Routes>
-            <Route path="/" element={<SystemHome />} />
+            <Route path="/" element={<HomeRedirect />} />
             <Route path="/login" element={<Login />} />
             <Route path="/login-etudiant" element={<StudentLogin />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
