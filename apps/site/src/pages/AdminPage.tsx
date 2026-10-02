@@ -65,7 +65,19 @@ function toastMagicLinkSendFailure(err: unknown) {
   toast.error(msg || "Impossible d’envoyer le lien de connexion.");
 }
 
-const AdminPage = ({ authorized = false, logoSrc = LOGO_UPG_SRC }: { authorized?: boolean; logoSrc?: string }) => {
+interface AdminPageProps {
+  authorized?: boolean;
+  logoSrc?: string;
+  activeSection?: string;
+  onSectionChange?: (section: string) => void;
+}
+
+const AdminPage = ({
+  authorized = false,
+  logoSrc = LOGO_UPG_SRC,
+  activeSection,
+  onSectionChange,
+}: AdminPageProps) => {
   type UserRole = Tables<"user_roles">;
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,7 +88,8 @@ const AdminPage = ({ authorized = false, logoSrc = LOGO_UPG_SRC }: { authorized?
   const [loginMode, setLoginMode] = useState<"password" | "magic">("password");
   const [authStep, setAuthStep] = useState<"email" | "sent">("email");
   const [loggingIn, setLoggingIn] = useState(false);
-  const [activeTab, setActiveTab] = useState("personnel");
+  const [localActiveTab, setLocalActiveTab] = useState("personnel");
+  const activeTab = activeSection ?? localActiveTab;
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [rolesLoading, setRolesLoading] = useState(false);
@@ -598,6 +611,11 @@ const AdminPage = ({ authorized = false, logoSrc = LOGO_UPG_SRC }: { authorized?
     ...(!authorized ? [{ id: "utilisateurs", label: "Utilisateurs & Rôles", icon: UserCog }] : []),
   ];
 
+  const changeTab = (section: string) => {
+    setLocalActiveTab(section);
+    onSectionChange?.(section);
+  };
+
   return (
     <div className="min-h-screen bg-[#edf2ed] flex flex-col text-[#20352d]">
       {/* Header */}
@@ -633,7 +651,7 @@ const AdminPage = ({ authorized = false, logoSrc = LOGO_UPG_SRC }: { authorized?
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => changeTab(tab.id)}
                   className={`w-auto lg:w-full min-w-fit px-3 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 lg:gap-3 ${
                     activeTab === tab.id
                       ? "bg-[#f0c46b] text-[#20352d] shadow-sm"
@@ -779,7 +797,7 @@ const AdminPage = ({ authorized = false, logoSrc = LOGO_UPG_SRC }: { authorized?
             {tabs.map((tab) => (
               <button
                 key={`mobile-${tab.id}`}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => changeTab(tab.id)}
                 className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap inline-flex items-center gap-1.5 transition-colors ${
                   activeTab === tab.id
                     ? "bg-[#f0c46b] text-[#20352d]"

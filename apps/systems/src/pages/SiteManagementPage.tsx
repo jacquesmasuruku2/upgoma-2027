@@ -1,10 +1,60 @@
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import logoUpg from '@/assets/logo-upg.jpg';
 import AdminPage from '@site/pages/AdminPage';
 
+const SECTION_BY_SLUG: Record<string, string> = {
+  personnel: 'personnel',
+  team: 'personnel',
+  blog: 'blog',
+  blogs: 'blog',
+  college: 'college',
+  'college-etudiants': 'college',
+  'student-council': 'college',
+  galerie: 'galerie',
+  gallery: 'galerie',
+  video: 'videos',
+  videos: 'videos',
+  calendrier: 'calendrier',
+  calendar: 'calendrier',
+  events: 'calendrier',
+  frais: 'frais',
+  fees: 'frais',
+  faculte: 'facultes',
+  facultes: 'facultes',
+  faculty: 'facultes',
+  faculties: 'facultes',
+  service: 'services',
+  services: 'services',
+  bibliotheque: 'bibliotheque',
+  library: 'bibliotheque',
+  partenaire: 'partenaires',
+  partenaires: 'partenaires',
+  partner: 'partenaires',
+  partners: 'partenaires',
+};
+
+const CANONICAL_SLUG_BY_SECTION: Record<string, string> = {
+  personnel: 'personnel',
+  blog: 'blog',
+  college: 'college-etudiants',
+  galerie: 'galerie',
+  videos: 'videos',
+  calendrier: 'calendrier',
+  frais: 'frais',
+  facultes: 'facultes',
+  services: 'services',
+  bibliotheque: 'bibliotheque',
+  partenaires: 'partenaires',
+};
+
 export default function SiteManagementPage() {
   const { user, loading } = useAuth();
+  const { section } = useParams<{ section?: string }>();
+  const navigate = useNavigate();
+  const sectionSlug = section?.toLowerCase();
+  const activeSection = sectionSlug ? SECTION_BY_SLUG[sectionSlug] : undefined;
 
   if (loading) {
     return <div className="p-8 text-center text-muted-foreground">Chargement...</div>;
@@ -22,5 +72,19 @@ export default function SiteManagementPage() {
     );
   }
 
-  return <AdminPage authorized={import.meta.env.DEV || user?.role === 'super_admin'} logoSrc={logoUpg} />;
+  if (!activeSection) {
+    return <Navigate to="/gestion-site/personnel" replace />;
+  }
+
+  return (
+    <AdminPage
+      authorized={import.meta.env.DEV || user?.role === 'super_admin'}
+      logoSrc={logoUpg}
+      activeSection={activeSection}
+      onSectionChange={(nextSection) => {
+        const slug = CANONICAL_SLUG_BY_SECTION[nextSection] ?? 'personnel';
+        navigate(`/gestion-site/${slug}`);
+      }}
+    />
+  );
 }

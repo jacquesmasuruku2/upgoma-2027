@@ -79,7 +79,7 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/inscription" element={<RegistrationRedirect />} />
-            <Route path="/gestion-site" element={<SiteManagementPage />} />
+            <Route path="/gestion-site/:section?" element={<SiteManagementPage />} />
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/etudiants" element={<Students />} />
