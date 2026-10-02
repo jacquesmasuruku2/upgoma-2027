@@ -42,6 +42,7 @@ import AdminServices from "@site/components/admin/AdminServices";
 import AdminLibrary from "@site/components/admin/AdminLibrary";
 import AdminVideos from "@site/components/admin/AdminVideos";
 import AdminPartners from "@site/components/admin/AdminPartners";
+import type { ReactNode } from "react";
 
 /** Erreur serveur Supabase (SMTP / quota), pas un problème d’URL de redirection. */
 function toastMagicLinkSendFailure(err: unknown) {
@@ -69,6 +70,8 @@ interface AdminPageProps {
   authorized?: boolean;
   logoSrc?: string;
   activeSection?: string;
+  onOpenAcademic?: () => void;
+  dashboard?: ReactNode;
   onSectionChange?: (section: string) => void;
 }
 
@@ -76,6 +79,8 @@ const AdminPage = ({
   authorized = false,
   logoSrc = LOGO_UPG_SRC,
   activeSection,
+  onOpenAcademic,
+  dashboard,
   onSectionChange,
 }: AdminPageProps) => {
   type UserRole = Tables<"user_roles">;
@@ -88,7 +93,7 @@ const AdminPage = ({
   const [loginMode, setLoginMode] = useState<"password" | "magic">("password");
   const [authStep, setAuthStep] = useState<"email" | "sent">("email");
   const [loggingIn, setLoggingIn] = useState(false);
-  const [localActiveTab, setLocalActiveTab] = useState("personnel");
+  const [localActiveTab, setLocalActiveTab] = useState("dashboard");
   const activeTab = activeSection ?? localActiveTab;
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [roles, setRoles] = useState<UserRole[]>([]);
@@ -597,6 +602,8 @@ const AdminPage = ({
   }
 
   const tabs = [
+    { id: "dashboard", label: "Tableau de bord", icon: Building2 },
+    ...(authorized && onOpenAcademic ? [{ id: "system", label: "Système académique", icon: GraduationCap }] : []),
     { id: "personnel", label: "Personnel", icon: Users },
     { id: "blog", label: "Blog", icon: Newspaper },
     { id: "college", label: "Collège Étudiants", icon: GraduationCap },
@@ -612,6 +619,10 @@ const AdminPage = ({
   ];
 
   const changeTab = (section: string) => {
+    if (section === "system") {
+      onOpenAcademic?.();
+      return;
+    }
     setLocalActiveTab(section);
     onSectionChange?.(section);
   };
@@ -626,7 +637,20 @@ const AdminPage = ({
             <span className="text-[#f0c46b]">UPG</span> Administration
           </h1>
         </div>
-        {!authorized && (
+        <div className="flex items-center gap-2 shrink-0">
+          {authorized && onOpenAcademic && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onOpenAcademic}
+              className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+            >
+              <GraduationCap className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Système académique</span>
+            </Button>
+          )}
+          {!authorized && (
           <Button
             variant="destructive"
             size="sm"
@@ -636,7 +660,8 @@ const AdminPage = ({
             <LogOut className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Déconnexion</span>
           </Button>
-        )}
+          )}
+        </div>
       </header>
 
       <main className="mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-24 lg:pb-6 max-w-full w-full flex-1">
@@ -675,6 +700,7 @@ const AdminPage = ({
 
           {/* Content */}
           <div className="flex-1 min-w-0 bg-card border border-border rounded-xl p-3 sm:p-6 shadow-md min-h-[60vh]">
+            {activeTab === "dashboard" && dashboard}
             {activeTab === "personnel" && <AdminPersonnel />}
             {activeTab === "blog" && <AdminBlog />}
             {activeTab === "college" && <AdminCollege />}

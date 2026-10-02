@@ -30,7 +30,7 @@ export default function Login() {
 
   useEffect(() => {
     if (user && !loading) {
-      navigate(user.role === 'etudiant' ? '/portail' : '/dashboard', { replace: true });
+      navigate(user.role === 'etudiant' ? '/system/portail' : '/system/dashboard', { replace: true });
     }
   }, [user, loading, navigate]);
 

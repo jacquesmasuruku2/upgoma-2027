@@ -8,7 +8,7 @@ export default function SystemHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const handleAcademic = () => navigate(user?.role === 'etudiant' ? '/portail' : '/dashboard');
+  const handleAcademic = () => navigate(user?.role === 'etudiant' ? '/system/portail' : '/system/dashboard');
 
   return (
     <div className="min-h-screen bg-background px-4 py-10 md:px-8">

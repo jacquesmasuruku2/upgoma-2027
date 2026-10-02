@@ -3,8 +3,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import logoUpg from '@/assets/logo-upg.jpg';
 import AdminPage from '@site/pages/AdminPage';
+import SiteManagementDashboard from '@/pages/SiteManagementDashboard';
 
 const SECTION_BY_SLUG: Record<string, string> = {
+  dashboard: 'dashboard',
+  accueil: 'dashboard',
   personnel: 'personnel',
   team: 'personnel',
   blog: 'blog',
@@ -36,6 +39,7 @@ const SECTION_BY_SLUG: Record<string, string> = {
 };
 
 const CANONICAL_SLUG_BY_SECTION: Record<string, string> = {
+  dashboard: 'dashboard',
   personnel: 'personnel',
   blog: 'blog',
   college: 'college-etudiants',
@@ -73,7 +77,7 @@ export default function SiteManagementPage() {
   }
 
   if (!activeSection) {
-    return <Navigate to="/gestion-site/personnel" replace />;
+    return <Navigate to="/gestion-site/dashboard" replace />;
   }
 
   return (
@@ -81,6 +85,8 @@ export default function SiteManagementPage() {
       authorized={import.meta.env.DEV || user?.role === 'super_admin'}
       logoSrc={logoUpg}
       activeSection={activeSection}
+      onOpenAcademic={() => navigate('/system/dashboard')}
+      dashboard={<SiteManagementDashboard onNavigate={(slug) => navigate(`/gestion-site/${slug}`)} />}
       onSectionChange={(nextSection) => {
         const slug = CANONICAL_SLUG_BY_SECTION[nextSection] ?? 'personnel';
         navigate(`/gestion-site/${slug}`);

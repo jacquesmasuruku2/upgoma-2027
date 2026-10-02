@@ -15,47 +15,47 @@ import logoUpg from '@/assets/logo-upg.jpg';
 
 const menuConfig: Record<string, { label: string; icon: any; path: string }[]> = {
   super_admin: [
-    { label: 'Tableau de bord', icon: LayoutDashboard, path: '/dashboard' },
-    { label: 'Gestion du site', icon: Globe, path: '/gestion-site' },
-    { label: 'Présences', icon: CheckCircle, path: '/presences' },
-    { label: 'Étudiants', icon: GraduationCap, path: '/etudiants' },
-    { label: 'Paiements', icon: CreditCard, path: '/paiements' },
-    { label: 'Cours', icon: BookOpen, path: '/cours' },
-    { label: 'Notes', icon: ClipboardList, path: '/notes' },
-    { label: 'Travaux', icon: FileText, path: '/travaux' },
-    { label: 'Utilisateurs', icon: UserCog, path: '/utilisateurs' },
-    { label: 'Requêtes', icon: FileText, path: '/requetes' },
-    { label: 'Valve', icon: Bell, path: '/valve' },
-    { label: 'Chat', icon: MessageSquare, path: '/chat' },
+    { label: 'Tableau de bord', icon: LayoutDashboard, path: '/system/dashboard' },
+    { label: 'Gestion du site', icon: Globe, path: '/gestion-site/dashboard' },
+    { label: 'Présences', icon: CheckCircle, path: '/system/presences' },
+    { label: 'Étudiants', icon: GraduationCap, path: '/system/etudiants' },
+    { label: 'Paiements', icon: CreditCard, path: '/system/paiements' },
+    { label: 'Cours', icon: BookOpen, path: '/system/cours' },
+    { label: 'Notes', icon: ClipboardList, path: '/system/notes' },
+    { label: 'Travaux', icon: FileText, path: '/system/travaux' },
+    { label: 'Utilisateurs', icon: UserCog, path: '/system/utilisateurs' },
+    { label: 'Requêtes', icon: FileText, path: '/system/requetes' },
+    { label: 'Valve', icon: Bell, path: '/system/valve' },
+    { label: 'Chat', icon: MessageSquare, path: '/system/chat' },
   ],
   appariteur: [
-    { label: 'Tableau de bord', icon: LayoutDashboard, path: '/dashboard' },
-    { label: 'Présences', icon: CheckCircle, path: '/presences' },
-    { label: 'Étudiants', icon: GraduationCap, path: '/etudiants' },
-    { label: 'Notes', icon: ClipboardList, path: '/notes' },
-    { label: 'Requêtes', icon: FileText, path: '/requetes' },
-    { label: 'Valve', icon: Bell, path: '/valve' },
-    { label: 'Chat', icon: MessageSquare, path: '/chat' },
+    { label: 'Tableau de bord', icon: LayoutDashboard, path: '/system/dashboard' },
+    { label: 'Présences', icon: CheckCircle, path: '/system/presences' },
+    { label: 'Étudiants', icon: GraduationCap, path: '/system/etudiants' },
+    { label: 'Notes', icon: ClipboardList, path: '/system/notes' },
+    { label: 'Requêtes', icon: FileText, path: '/system/requetes' },
+    { label: 'Valve', icon: Bell, path: '/system/valve' },
+    { label: 'Chat', icon: MessageSquare, path: '/system/chat' },
   ],
   enseignant: [
-    { label: 'Présences', icon: CheckCircle, path: '/presences' },
-    { label: 'Cours', icon: BookOpen, path: '/cours' },
-    { label: 'Notes', icon: ClipboardList, path: '/notes' },
-    { label: 'Travaux', icon: FileText, path: '/travaux' },
-    { label: 'Valve', icon: Bell, path: '/valve' },
-    { label: 'Chat', icon: MessageSquare, path: '/chat' },
+    { label: 'Présences', icon: CheckCircle, path: '/system/presences' },
+    { label: 'Cours', icon: BookOpen, path: '/system/cours' },
+    { label: 'Notes', icon: ClipboardList, path: '/system/notes' },
+    { label: 'Travaux', icon: FileText, path: '/system/travaux' },
+    { label: 'Valve', icon: Bell, path: '/system/valve' },
+    { label: 'Chat', icon: MessageSquare, path: '/system/chat' },
   ],
   finance: [
-    { label: 'Tableau de bord', icon: LayoutDashboard, path: '/dashboard' },
-    { label: 'Paiements', icon: CreditCard, path: '/paiements' },
-    { label: 'Chat', icon: MessageSquare, path: '/chat' },
+    { label: 'Tableau de bord', icon: LayoutDashboard, path: '/system/dashboard' },
+    { label: 'Paiements', icon: CreditCard, path: '/system/paiements' },
+    { label: 'Chat', icon: MessageSquare, path: '/system/chat' },
   ],
   etudiant: [
-    { label: 'Mon Portail', icon: Users, path: '/portail' },
-    { label: 'Mes Travaux', icon: ClipboardList, path: '/mes-travaux' },
-    { label: 'Valve', icon: Bell, path: '/valve' },
-    { label: 'Requêtes', icon: FileText, path: '/requetes' },
-    { label: 'Chat', icon: MessageSquare, path: '/chat' },
+    { label: 'Mon Portail', icon: Users, path: '/system/portail' },
+    { label: 'Mes Travaux', icon: ClipboardList, path: '/system/mes-travaux' },
+    { label: 'Valve', icon: Bell, path: '/system/valve' },
+    { label: 'Requêtes', icon: FileText, path: '/system/requetes' },
+    { label: 'Chat', icon: MessageSquare, path: '/system/chat' },
   ],
 };
 
@@ -91,7 +91,7 @@ export default function Layout() {
   }, [user]);
 
   useEffect(() => {
-    if (location.pathname === '/chat') setUnreadMessages(0);
+    if (location.pathname === '/system/chat') setUnreadMessages(0);
   }, [location.pathname]);
 
   if (!user) return <Navigate to="/" replace />;
@@ -99,8 +99,8 @@ export default function Layout() {
   const items = menuConfig[user.role] || [];
 
   const getBadge = (path: string) => {
-    if (path === '/valve' && unreadAnnouncements > 0) return unreadAnnouncements;
-    if (path === '/chat' && unreadMessages > 0) return unreadMessages;
+    if (path === '/system/valve' && unreadAnnouncements > 0) return unreadAnnouncements;
+    if (path === '/system/chat' && unreadMessages > 0) return unreadMessages;
     return 0;
   };
 

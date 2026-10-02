@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import Login from "@/pages/Login";
@@ -38,10 +38,19 @@ function HomeRedirect() {
   }
 
   const destination = user
-    ? user.role === 'etudiant' ? '/portail' : '/dashboard'
+    ? user.role === 'etudiant'
+      ? '/system/portail'
+      : user.role === 'super_admin'
+        ? '/gestion-site/dashboard'
+        : '/system/dashboard'
     : '/login';
 
   return <Navigate to={destination} replace />;
+}
+
+function LegacySystemRedirect() {
+  const location = useLocation();
+  return <Navigate to={`/system${location.pathname}${location.search}${location.hash}`} replace />;
 }
 
 // Redirect component for /inscription to main site admission page
@@ -94,21 +103,35 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/inscription" element={<RegistrationRedirect />} />
             <Route path="/gestion-site/:section?" element={<SiteManagementPage />} />
-            <Route element={<Layout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/etudiants" element={<Students />} />
-              <Route path="/paiements" element={<Payments />} />
-              <Route path="/cours" element={<Courses />} />
-              <Route path="/presences" element={<Attendance />} />
-              <Route path="/notes" element={<Grades />} />
-              <Route path="/utilisateurs" element={<Users />} />
-              <Route path="/requetes" element={<Requests />} />
-              <Route path="/valve" element={<Valve />} />
-              <Route path="/chat" element={<Chat />} />
-              <Route path="/portail" element={<StudentPortal />} />
-              <Route path="/travaux" element={<Assignments />} />
-              <Route path="/mes-travaux" element={<StudentAssignments />} />
+            <Route path="/system" element={<Layout />}>
+              <Route index element={<Navigate to="/system/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="etudiants" element={<Students />} />
+              <Route path="paiements" element={<Payments />} />
+              <Route path="cours" element={<Courses />} />
+              <Route path="presences" element={<Attendance />} />
+              <Route path="notes" element={<Grades />} />
+              <Route path="utilisateurs" element={<Users />} />
+              <Route path="requetes" element={<Requests />} />
+              <Route path="valve" element={<Valve />} />
+              <Route path="chat" element={<Chat />} />
+              <Route path="portail" element={<StudentPortal />} />
+              <Route path="travaux" element={<Assignments />} />
+              <Route path="mes-travaux" element={<StudentAssignments />} />
             </Route>
+            <Route path="/dashboard" element={<LegacySystemRedirect />} />
+            <Route path="/etudiants" element={<LegacySystemRedirect />} />
+            <Route path="/paiements" element={<LegacySystemRedirect />} />
+            <Route path="/cours" element={<LegacySystemRedirect />} />
+            <Route path="/presences" element={<LegacySystemRedirect />} />
+            <Route path="/notes" element={<LegacySystemRedirect />} />
+            <Route path="/utilisateurs" element={<LegacySystemRedirect />} />
+            <Route path="/requetes" element={<LegacySystemRedirect />} />
+            <Route path="/valve" element={<LegacySystemRedirect />} />
+            <Route path="/chat" element={<LegacySystemRedirect />} />
+            <Route path="/portail" element={<LegacySystemRedirect />} />
+            <Route path="/travaux" element={<LegacySystemRedirect />} />
+            <Route path="/mes-travaux" element={<LegacySystemRedirect />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
