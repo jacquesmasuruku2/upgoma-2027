@@ -160,6 +160,47 @@ les identifiants R2 et `CORS_ORIGINS` (incluant `https://system.upgoma.org`).
 Les tables de session et de jetons sont créées par
 [`deploy/postgresql/native_auth.sql`](./deploy/postgresql/native_auth.sql).
 
+### Installation de l'API sur un VPS Linux avec Nginx
+
+Depuis la copie de production du dépôt, avec le fichier `.env` racine déjà
+configuré et lisible par le compte de service, installer Node.js et les
+dépendances de production, puis créer et démarrer le service `systemd` :
+
+```bash
+cd /chemin/vers/upgoma-2027
+npm install --omit=dev --workspace=@upgoma/server
+sudo bash deploy/scripts/install-upgoma-api.sh "$PWD" upgoma
+```
+
+Remplacer `upgoma` par le compte Linux non-root propriétaire du dépôt. Le script
+ne lit ni n'affiche les valeurs de `.env`; il installe `upgoma-api.service`,
+l'active au démarrage du VPS, puis vérifie `http://127.0.0.1:8787/api/auth/session`.
+Sans cookie de session, cette route doit répondre HTTP 401. En cas d'échec,
+consulter `sudo journalctl -u upgoma-api -n 80 --no-pager`.
+
+Pour Nginx, ajouter cette directive **dans le bloc `server` HTTPS de
+`system.upgoma.org`** après avoir copié le dépôt à son emplacement permanent :
+
+```nginx
+include /chemin/vers/upgoma-2027/deploy/nginx/admission-api-location.conf;
+```
+
+Tester et recharger Nginx :
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Vérifier ensuite le proxy public. Le corps doit être du JSON et le statut HTTP
+401 sans session (pas le HTML de l'application) :
+
+```bash
+curl -i https://system.upgoma.org/api/auth/session
+```
+
+L'API doit aussi rester active via `systemd` avant de configurer le proxy Nginx.
+Ne pas lancer le serveur de développement Vite comme serveur API de production.
+
 La migration des autres écrans de gestion académique hors Supabase n'est pas
 encore achevée : les écrans de données listés dans `apps/systems/src` utilisent
 encore l'ancien client pour certaines opérations. Ne supprimez pas sa dépendance
