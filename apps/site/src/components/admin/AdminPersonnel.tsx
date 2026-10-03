@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { usePersonnel, useUpsertPersonnel, useDeletePersonnel } from "@site/hooks/useSupabaseData";
+import { usePersonnel, usePublishedServiceOptions, useUpsertPersonnel, useDeletePersonnel } from "@site/hooks/useSupabaseData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,12 +15,14 @@ interface FormData {
   display_order: number;
   email: string;
   linkedin_url: string;
+  service_slug: string;
 }
 
-const empty: FormData = { name: "", role: "", bio: "", photo_url: "", display_order: 0, email: "", linkedin_url: "" };
+const empty: FormData = { name: "", role: "", bio: "", photo_url: "", display_order: 0, email: "", linkedin_url: "", service_slug: "" };
 
 const AdminPersonnel = () => {
   const { data: items, isLoading } = usePersonnel();
+  const { data: services = [] } = usePublishedServiceOptions();
   const upsert = useUpsertPersonnel();
   const remove = useDeletePersonnel();
   const [editing, setEditing] = useState<FormData | null>(null);
@@ -58,6 +60,19 @@ const AdminPersonnel = () => {
             </div>
           </div>
           <Textarea placeholder="Biographie..." value={editing.bio} onChange={(e) => setEditing({ ...editing, bio: e.target.value })} rows={3} />
+          <label className="block space-y-1 text-sm font-medium text-foreground">
+            Service associé
+            <select
+              value={editing.service_slug}
+              onChange={(e) => setEditing({ ...editing, service_slug: e.target.value })}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-normal"
+            >
+              <option value="">Aucun service associé</option>
+              {services.map((service) => (
+                <option key={service.slug} value={service.slug}>{service.name}</option>
+              ))}
+            </select>
+          </label>
           <ImageUpload value={editing.photo_url} onChange={(url) => setEditing({ ...editing, photo_url: url })} folder="personnel" />
           <Input type="number" placeholder="Ordre d'affichage" value={editing.display_order} onChange={(e) => setEditing({ ...editing, display_order: Number(e.target.value) })} className="w-32" />
           <div className="flex gap-2">
@@ -90,7 +105,8 @@ const AdminPersonnel = () => {
             <div className="flex gap-1">
               <Button size="icon" variant="ghost" onClick={() => setEditing({
                 id: p.id, name: p.name, role: p.role, bio: p.bio || "", photo_url: p.photo_url || "",
-                display_order: p.display_order || 0, email: (p as any).email || "", linkedin_url: (p as any).linkedin_url || ""
+                display_order: p.display_order || 0, email: (p as any).email || "", linkedin_url: (p as any).linkedin_url || "",
+                service_slug: (p as any).service_slug || ""
               })}>
                 <Pencil className="w-4 h-4" />
               </Button>

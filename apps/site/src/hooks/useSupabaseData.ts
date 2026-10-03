@@ -16,6 +16,20 @@ export const usePersonnel = () =>
     },
   });
 
+export const usePublishedServiceOptions = () =>
+  useQuery({
+    queryKey: ["published-service-options"],
+    queryFn: async (): Promise<{ name: string; slug: string }[]> => {
+      const { data, error } = await supabase
+        .from("services" as any)
+        .select("name, slug")
+        .eq("published", true)
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return data as { name: string; slug: string }[];
+    },
+  });
+
 export const useUpsertPersonnel = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -28,6 +42,7 @@ export const useUpsertPersonnel = () => {
       display_order?: number;
       email?: string;
       linkedin_url?: string;
+      service_slug?: string | null;
     }) => {
       const { error } = item.id
         ? await supabase.from("personnel").update(item as any).eq("id", item.id)

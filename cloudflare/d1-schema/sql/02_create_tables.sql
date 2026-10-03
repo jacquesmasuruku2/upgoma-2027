@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS newsletter_subscribers (
 
 -- -----------------------------------------------------------------------------
 -- 10. personnel
--- Colonnes : id, name, role, bio, photo_url, email, linkedin_url, display_order,
+-- Colonnes : id, name, role, bio, photo_url, email, linkedin_url, service_slug, display_order,
 --            created_at, updated_at
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS personnel (
@@ -165,6 +165,7 @@ CREATE TABLE IF NOT EXISTS personnel (
   photo_url TEXT,
   email TEXT,
   linkedin_url TEXT,
+  service_slug TEXT,
   display_order INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))

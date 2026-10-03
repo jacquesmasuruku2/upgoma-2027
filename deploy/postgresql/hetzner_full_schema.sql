@@ -109,6 +109,7 @@ CREATE TABLE IF NOT EXISTS public.personnel (
   display_order integer DEFAULT 0,
   email text,
   linkedin_url text,
+  service_slug text,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import Layout from "@/components/Layout";
-import { User, Mail, Linkedin } from "lucide-react";
-import { usePersonnel } from "@/hooks/useSupabaseData";
+import { ArrowUpRight, User, Mail, Linkedin } from "lucide-react";
+import { Link } from "react-router-dom";
+import { usePersonnel, usePublishedServiceOptions } from "@/hooks/useSupabaseData";
 import AnimatedSection from "@/components/AnimatedSection";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -15,6 +16,7 @@ const staticPersonnel = [
 
 const PersonnelPage = () => {
   const { data: dbPersonnel } = usePersonnel();
+  const { data: services = [] } = usePublishedServiceOptions();
   const { t } = useLanguage();
   const personnel = dbPersonnel && dbPersonnel.length > 0 ? dbPersonnel : staticPersonnel;
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -44,6 +46,9 @@ const PersonnelPage = () => {
             {personnel.map((p: any, i: number) => {
               const isActive = activeId === p.name;
               const hasLinks = p.email || p.linkedin_url;
+              const serviceSlug = p.service_slug || (p.role?.toLowerCase().includes("recteur") ? "rectorat" : null);
+              const linkedService = services.find((service) => service.slug === serviceSlug);
+              const serviceHref = linkedService ? `/service/${encodeURIComponent(linkedService.slug)}` : null;
               return (
                 <AnimatedSection key={p.name} delay={i * 0.06}>
                   <div
@@ -59,8 +64,17 @@ const PersonnelPage = () => {
                         </div>
                       )}
 
+                      {serviceHref && (
+                        <Link
+                          to={serviceHref}
+                          aria-label={`Voir le service ${linkedService.name} lié à ${p.name}`}
+                          onClick={(event) => event.stopPropagation()}
+                          className="absolute inset-0 z-10"
+                        />
+                      )}
+
                       {isActive && hasLinks && (
-                        <div className="absolute inset-0 bg-black/40 flex items-start pt-5 pl-4 animate-in fade-in duration-200">
+                        <div className="pointer-events-none absolute inset-0 z-20 bg-black/40 flex items-start pt-5 pl-4 animate-in fade-in duration-200">
                           <div className="flex flex-col gap-2">
                             {p.linkedin_url && (
                               <a
@@ -68,7 +82,7 @@ const PersonnelPage = () => {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="w-9 h-9 rounded-full bg-[hsl(210,80%,40%)] text-white flex items-center justify-center hover:opacity-80 transition-opacity"
+                                className="pointer-events-auto w-9 h-9 rounded-full bg-[hsl(210,80%,40%)] text-white flex items-center justify-center hover:opacity-80 transition-opacity"
                               >
                                 <Linkedin className="w-4 h-4" />
                               </a>
@@ -77,7 +91,7 @@ const PersonnelPage = () => {
                               <a
                                 href={`mailto:${p.email}`}
                                 onClick={(e) => e.stopPropagation()}
-                                className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-80 transition-opacity"
+                                className="pointer-events-auto w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-80 transition-opacity"
                               >
                                 <Mail className="w-4 h-4" />
                               </a>
@@ -88,11 +102,25 @@ const PersonnelPage = () => {
                     </div>
 
                     <div className="p-4">
-                      <h3 className="font-bold text-foreground text-sm mb-0.5 uppercase">{p.name}</h3>
+                      {serviceHref ? (
+                        <Link
+                          to={serviceHref}
+                          onClick={(event) => event.stopPropagation()}
+                          className="inline-flex items-center gap-1 font-bold text-foreground text-sm mb-0.5 uppercase hover:text-primary transition-colors"
+                        >
+                          {p.name}
+                          <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
+                        </Link>
+                      ) : (
+                        <h3 className="font-bold text-foreground text-sm mb-0.5 uppercase">{p.name}</h3>
+                      )}
                       {p.email && (
                         <p className="text-muted-foreground text-xs mb-0.5">{p.email}</p>
                       )}
                       <p className="text-primary text-xs font-medium">{p.role}</p>
+                      {linkedService && (
+                        <p className="mt-1 text-xs text-muted-foreground">Service : {linkedService.name}</p>
+                      )}
                     </div>
                   </div>
                 </AnimatedSection>

@@ -29,7 +29,12 @@ export default function Login() {
 
   useEffect(() => {
     if (user && !loading) {
-      navigate(user.role === 'etudiant' ? '/system/portail' : '/system/dashboard', { replace: true });
+      const destination = user.role === 'etudiant'
+        ? '/system/portail'
+        : user.role === 'super_admin'
+          ? '/gestion-site/dashboard'
+          : '/system/dashboard';
+      navigate(destination, { replace: true });
     }
   }, [user, loading, navigate]);
 
@@ -39,7 +44,7 @@ export default function Login() {
     const error = await login(email, password, role);
     setSubmitting(false);
     if (error) {
-      toast.error('Identifiants incorrects. Vérifiez votre email et mot de passe.');
+      toast.error(error);
     } else {
       toast.success('Connexion réussie!');
     }
@@ -183,4 +188,3 @@ export default function Login() {
     </div>
   );
 }
-

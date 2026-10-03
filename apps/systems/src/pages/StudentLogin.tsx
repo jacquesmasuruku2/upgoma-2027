@@ -19,7 +19,12 @@ export default function StudentLogin() {
 
   useEffect(() => {
     if (user && !loading) {
-      navigate(user.role === 'etudiant' ? '/system/portail' : '/system/dashboard', { replace: true });
+      const destination = user.role === 'etudiant'
+        ? '/system/portail'
+        : user.role === 'super_admin'
+          ? '/gestion-site/dashboard'
+          : '/system/dashboard';
+      navigate(destination, { replace: true });
     }
   }, [user, loading, navigate]);
 
@@ -133,4 +138,3 @@ export default function StudentLogin() {
     </div>
   );
 }
-

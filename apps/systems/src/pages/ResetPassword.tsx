@@ -46,7 +46,12 @@ export default function ResetPassword() {
       });
       await refreshSession();
       toast.success('Mot de passe défini avec succès.');
-      setTimeout(() => navigate(user.role === 'etudiant' ? '/system/portail' : '/system/dashboard'), 1200);
+      const destination = user.role === 'etudiant'
+        ? '/system/portail'
+        : user.role === 'super_admin'
+          ? '/gestion-site/dashboard'
+          : '/system/dashboard';
+      setTimeout(() => navigate(destination), 1200);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erreur lors de la définition du mot de passe.');
     } finally {

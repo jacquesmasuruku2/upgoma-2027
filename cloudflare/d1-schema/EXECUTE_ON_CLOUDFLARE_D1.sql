@@ -130,6 +130,7 @@ CREATE TABLE IF NOT EXISTS personnel (
   photo_url TEXT,
   email TEXT,
   linkedin_url TEXT,
+  service_slug TEXT,
   display_order INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
