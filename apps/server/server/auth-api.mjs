@@ -24,6 +24,11 @@ function isStrongPassword(password) {
     && /[^A-Za-z0-9]/.test(password);
 }
 
+function isSmtpIpRejected(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /unauthorized ip address|5\.7\.1/i.test(message);
+}
+
 async function hashPassword(password) {
   const salt = randomBytes(16);
   const cost = 32768;
@@ -255,6 +260,11 @@ export function createAuthRouter(pool, trustedOrigins) {
       return res.status(202).json({ ok: true, message: "Si un compte actif correspond à cette adresse, un e-mail sera envoyé." });
     } catch (error) {
       console.error("[auth/forgot-password] Failed:", error instanceof Error ? error.message : "unknown error");
+      if (isSmtpIpRejected(error)) {
+        return res.status(503).json({
+          error: "Brevo refuse l’envoi depuis l’adresse IP de ce serveur. Autorisez son IP publique sortante dans les paramètres SMTP Brevo, puis réessayez.",
+        });
+      }
       return res.status(503).json({ error: "Le service d’e-mail est indisponible. Réessayez plus tard." });
     }
   });
