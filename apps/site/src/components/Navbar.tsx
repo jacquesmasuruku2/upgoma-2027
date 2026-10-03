@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { Fragment, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, ChevronDown, Plus } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAllFacultyContent } from "@/hooks/useSupabaseData";
 import { useIsLgUp } from "@/hooks/use-mobile";
@@ -17,6 +18,13 @@ const defaultFacultyLinks = [
   { label: "Sciences Agronomiques", href: "/faculte/sciences-agronomiques" },
 ];
 
+type NavMenuItem = {
+  label: string;
+  href?: string;
+  external?: boolean;
+  children?: NavMenuItem[];
+};
+
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
@@ -27,11 +35,41 @@ const Navbar = () => {
   const { data: dbFaculties } = useAllFacultyContent();
   const isLgUp = useIsLgUp();
 
-  const facultyLinks = dbFaculties && dbFaculties.length > 0
-    ? dbFaculties.map((f: any) => ({ label: f.name, href: `/faculte/${f.slug}` }))
+  useEffect(() => {
+    const closeMenus = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileOpen(false);
+        setDropdownOpen(null);
+        setNestedOpen(null);
+      }
+    };
+    window.addEventListener("keydown", closeMenus);
+    return () => window.removeEventListener("keydown", closeMenus);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    const desktopViewport = window.matchMedia("(min-width: 1280px)");
+    const closeMobileMenu = () => {
+      if (desktopViewport.matches) setMobileOpen(false);
+    };
+    desktopViewport.addEventListener("change", closeMobileMenu);
+    return () => desktopViewport.removeEventListener("change", closeMobileMenu);
+  }, []);
+
+  const facultyLinks: NavMenuItem[] = dbFaculties && dbFaculties.length > 0
+    ? dbFaculties.map((faculty) => ({ label: faculty.name, href: `/faculte/${faculty.slug}` }))
     : defaultFacultyLinks;
 
-  const navItems = [
+  const navItems: NavMenuItem[] = [
     { label: t("nav.home"), href: "/" },
     {
       label: "Présentation",
@@ -92,11 +130,11 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-background border-b border-border sticky top-0 z-40 shadow-sm">
+    <nav className="sticky top-0 z-40 border-b border-border border-t-2 border-t-upg-sky bg-background/95 shadow-sm backdrop-blur">
       <div className="container mx-auto flex h-16 items-center justify-between gap-3 px-4">
         <Link
           to="/"
-          className="flex min-w-0 flex-1 items-center gap-2 lg:flex-initial"
+          className="flex min-w-0 flex-1 items-center gap-2 xl:flex-initial"
           aria-label="Université Polytechnique de Goma - Accueil"
         >
           <img src={LOGO_UPG_SRC} alt="Logo UPG" className="h-10 w-10 shrink-0 rounded-full object-cover" />
@@ -106,55 +144,63 @@ const Navbar = () => {
               Université Polytechnique<br />de Goma
             </span>
           ) : (
-            <span className="truncate text-lg font-bold tracking-tight text-[hsl(210,70%,25%)] dark:text-[hsl(210,70%,72%)]">
+            <span className="truncate text-lg font-bold tracking-tight text-[hsl(var(--upg-dark))] dark:text-[hsl(210,70%,72%)]">
               UPG
             </span>
           )}
         </Link>
 
         {/* Desktop menu */}
-        <div className="hidden lg:flex items-center gap-1">
+        <div className="hidden xl:flex items-center gap-0.5">
           {navItems.map((item) =>
             item.children ? (
               <div
                 key={item.label}
                 className="relative"
                 onMouseEnter={() => setDropdownOpen(item.label)}
-                onMouseLeave={() => setDropdownOpen(null)}
+                onMouseLeave={() => {
+                  setDropdownOpen(null);
+                  setNestedOpen(null);
+                }}
               >
                 <button
-                  className="flex items-center gap-1 px-3 py-1 text-sm font-medium text-foreground hover:text-[hsl(var(--upg-orange))] transition-all duration-300 rounded-md hover:bg-secondary hover:scale-105"
+                  onClick={() => setDropdownOpen(item.label)}
+                  className={`flex items-center gap-1 rounded-md px-2.5 py-2 text-sm font-medium transition-colors duration-200 hover:bg-upg-sky-light hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-upg-sky ${dropdownOpen === item.label ? "bg-upg-sky-light text-primary" : "text-foreground"}`}
                   aria-label={`${item.label} - menu déroulant`}
                   aria-expanded={dropdownOpen === item.label}
                   aria-haspopup="true"
                 >
                   {item.label}
-                  <ChevronDown className="w-3 h-3" />
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${dropdownOpen === item.label ? "rotate-180" : ""}`} />
                 </button>
                 {dropdownOpen === item.label && (
-                  <div className="absolute top-full left-0 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[220px] animate-fade-in">
+                  <div className="absolute left-0 top-full min-w-[15rem] rounded-xl border border-border bg-card p-1.5 shadow-xl animate-fade-in">
                     {item.children.map((child, index) =>
-                      (child as any).children ? (
+                      child.children ? (
                         <div
                           key={child.label}
                           className="relative"
                           onMouseEnter={() => setNestedOpen(child.label)}
                           onMouseLeave={() => setNestedOpen(null)}
                         >
-                          <button className="flex w-full items-center justify-between px-4 py-2 text-sm text-foreground hover:bg-secondary hover:text-[hsl(var(--upg-orange))] transition-all duration-300 hover:scale-105">
+                          <button
+                            onClick={() => setNestedOpen(nestedOpen === child.label ? null : child.label)}
+                            className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-upg-sky-light hover:text-primary"
+                            aria-expanded={nestedOpen === child.label}
+                          >
                             <span>{child.label}</span>
                             <ChevronDown className="h-3 w-3" />
                           </button>
                           {index < item.children.length - 1 && <div className="mx-4 h-px bg-border/50" />}
                           {nestedOpen === child.label && (
-                            <div className="absolute right-full top-0 mr-1 min-w-[230px] rounded-lg border border-border bg-card py-1 shadow-lg animate-fade-in">
-                              {(child as any).children.map((sub: any, subIndex: number) => (
+                            <div className="absolute right-full top-0 mr-2 min-w-[15rem] rounded-xl border border-border bg-card p-1.5 shadow-xl animate-fade-in">
+                              {child.children.map((sub) => (
                                 <a
                                   key={sub.label}
                                   href={sub.href}
                                   target="_top"
                                   rel="noopener noreferrer"
-                                  className="block px-4 py-2 text-sm text-foreground hover:bg-secondary hover:text-[hsl(var(--upg-orange))] transition-all duration-300 hover:scale-105"
+                                  className="block rounded-lg px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-upg-sky-light hover:text-primary"
                                   onClick={() => {
                                     setDropdownOpen(null);
                                     setNestedOpen(null);
@@ -166,44 +212,41 @@ const Navbar = () => {
                             </div>
                           )}
                         </div>
-                      ) : child.href.startsWith("/#") ? (
-                        <>
+                      ) : child.href?.startsWith("/#") ? (
+                        <Fragment key={child.label}>
                           <button
-                            key={child.label}
-                            onClick={() => handleNavClick(child.href)}
-                            className="block w-full text-left px-4 py-2 text-sm text-foreground hover:bg-secondary hover:text-primary transition-colors"
+                            onClick={() => handleNavClick(child.href!)}
+                            className="block w-full rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-upg-sky-light hover:text-primary"
                           >
                             {child.label}
                           </button>
                           {index < item.children.length - 1 && <div className="mx-4 h-px bg-border/50" />}
-                        </>
-                      ) : (child as any).external ? (
-                        <>
+                        </Fragment>
+                      ) : child.external ? (
+                        <Fragment key={child.label}>
                           <a
-                            key={child.label}
                             href={child.href}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="block px-4 py-2 text-sm text-foreground hover:bg-secondary hover:text-[hsl(var(--upg-orange))] transition-all duration-300 hover:scale-105"
+                            className="block rounded-lg px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-upg-sky-light hover:text-primary"
                             onClick={() => setDropdownOpen(null)}
                           >
                             {child.label}
                           </a>
                           {index < item.children.length - 1 && <div className="mx-4 h-px bg-border/50" />}
-                        </>
+                        </Fragment>
                       ) : (
-                        <>
+                        <Fragment key={child.label}>
                           <Link
-                            key={child.label}
-                            to={child.href}
-                            className="block px-4 py-2 text-sm text-foreground hover:bg-secondary hover:text-[hsl(var(--upg-orange))] transition-all duration-300 hover:scale-105"
+                            to={child.href ?? "#"}
+                            className="block rounded-lg px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-upg-sky-light hover:text-primary"
                             onClick={() => setDropdownOpen(null)}
                             aria-label={`Naviguer vers ${child.label}`}
                           >
                             {child.label}
                           </Link>
                           {index < item.children.length - 1 && <div className="mx-4 h-px bg-border/50" />}
-                        </>
+                        </Fragment>
                       )
                     )}
                   </div>
@@ -213,7 +256,7 @@ const Navbar = () => {
               <button
                 key={item.label}
                 onClick={() => handleNavClick(item.href!)}
-                className="px-3 py-1 text-sm font-medium text-foreground hover:text-[hsl(var(--upg-orange))] transition-all duration-300 rounded-md hover:bg-secondary hover:scale-105"
+                className="rounded-md px-2.5 py-2 text-sm font-medium text-foreground transition-colors duration-200 hover:bg-upg-sky-light hover:text-primary"
               >
                 {item.label}
               </button>
@@ -221,7 +264,7 @@ const Navbar = () => {
                         <Link
                           key={item.label}
                           to={item.href!}
-                          className="px-3 py-1 text-sm font-medium text-foreground hover:text-[hsl(var(--upg-orange))] transition-all duration-300 rounded-md hover:bg-secondary hover:scale-105"
+                          className={`rounded-md px-2.5 py-2 text-sm font-medium transition-colors duration-200 hover:bg-upg-sky-light hover:text-primary ${location.pathname === item.href ? "bg-upg-sky-light text-primary" : "text-foreground"}`}
                           aria-label={`Naviguer vers ${item.label}`}
                         >
                 {item.label}
@@ -232,45 +275,40 @@ const Navbar = () => {
         </div>
 
         {/* Mobile toggle — shrink-0 pour ne pas être poussé par le logo */}
-        <div className="flex shrink-0 items-center gap-1 lg:hidden">
+        <div className="flex shrink-0 items-center gap-1 xl:hidden">
           <ThemeToggle />
           <button
-            className="relative p-2 text-foreground hover:bg-accent rounded-lg transition-all duration-200 hover:scale-105"
+            className="rounded-lg p-2 text-foreground transition-colors hover:bg-upg-sky-light hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-upg-sky"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Menu principal"
             aria-expanded={mobileOpen}
           >
-            <div className="relative w-6 h-6">
-              {/* Lignes du menu hamburger */}
-              <span className={`absolute left-0 top-1/2 w-6 h-0.5 bg-current transform -translate-y-1/2 transition-all duration-300 ${mobileOpen ? 'rotate-45' : ''}`}></span>
-              <span className={`absolute left-0 top-1/2 w-6 h-0.5 bg-current transform -translate-y-1/2 transition-all duration-300 ${mobileOpen ? 'opacity-0' : 'translate-y-1'}`}></span>
-              <span className={`absolute left-0 top-1/2 w-6 h-0.5 bg-current transform -translate-y-1/2 transition-all duration-300 ${mobileOpen ? '-rotate-45' : 'translate-y-1'}`}></span>
-            </div>
+            {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
       </div>
 
       {/* Mobile menu overlay */}
-      {mobileOpen && (
+      {mobileOpen && createPortal(
         <>
           {/* Overlay sombre */}
           <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden animate-fade-in"
+            className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-sm xl:hidden animate-fade-in"
             onClick={() => setMobileOpen(false)}
             aria-label="Fermer le menu"
           />
           
           {/* Menu slide-in */}
-          <div className="lg:hidden fixed top-0 right-0 h-full w-80 max-w-[90vw] bg-background shadow-2xl border-l border-border z-50 animate-slide-in">
+          <aside className="fixed inset-y-0 right-0 z-50 flex w-[min(22rem,90vw)] flex-col border-l border-border bg-background shadow-2xl xl:hidden animate-slide-in" role="dialog" aria-modal="true" aria-label="Menu principal">
             {/* Header du menu mobile */}
-            <div className="flex items-center justify-between p-4 border-b border-border">
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <div className="flex items-center gap-2">
                 <img src={LOGO_UPG_SRC} alt="Logo UPG" className="h-8 w-auto" />
                 <span className="font-semibold text-foreground">UPG</span>
               </div>
               <button
                 onClick={() => setMobileOpen(false)}
-                className="p-2 rounded-lg hover:bg-accent transition-colors"
+                className="rounded-lg p-2 transition-colors hover:bg-upg-sky-light hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-upg-sky"
                 aria-label="Fermer le menu"
               >
                 <X className="w-5 h-5" />
@@ -278,52 +316,49 @@ const Navbar = () => {
             </div>
             
             {/* Contenu du menu */}
-            <div className="flex-1 overflow-y-auto p-2">
-              {navItems.map((item, index) => (
-                <div key={item.label} className={index > 0 ? 'mt-2' : ''}>
-                  {/* Séparateur visuel */}
-                  {index > 0 && (
-                    <div className="mb-2 flex items-center">
-                      <div className="flex-1 h-px bg-border"></div>
-                      <div className="w-px h-px bg-border"></div>
-                      <div className="flex-1 h-px bg-border"></div>
-                    </div>
-                  )}
-                  
+            <div className="flex-1 overflow-y-auto px-4 py-5">
+              <div className="mb-3 px-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Navigation
+              </div>
+              <div className="space-y-1">
+              {navItems.map((item) => (
+                <div key={item.label}>
                   {/* Élément de menu */}
                   {item.children ? (
                     <div>
                       <button
                         onClick={() => setDropdownOpen(dropdownOpen === item.label ? null : item.label)}
-                        className="flex items-center justify-between w-full px-2 py-1 text-sm font-medium text-foreground rounded-lg hover:bg-accent hover:text-[hsl(var(--upg-orange))] transition-all duration-300 hover:scale-105"
+                        className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-upg-sky-light hover:text-primary ${dropdownOpen === item.label ? "bg-upg-sky-light text-primary" : "text-foreground"}`}
+                        aria-expanded={dropdownOpen === item.label}
                       >
                         <span>{item.label}</span>
-                        <Plus className={`w-4 h-4 transition-transform ${dropdownOpen === item.label ? 'rotate-45' : ''}`} />
+                        <ChevronDown className={`h-4 w-4 transition-transform ${dropdownOpen === item.label ? "rotate-180" : ""}`} />
                       </button>
                       
                       {dropdownOpen === item.label && (
-                        <div className="mt-1 space-y-1">
+                        <div className="ml-3 mt-1 space-y-1 border-l border-upg-sky/30 pl-2">
                           {item.children.map((child) => (
                             <div key={child.label} className="ml-2">
-                              {(child as any).children ? (
+                              {child.children ? (
                                 <div>
                                   <button
                                     onClick={() => setNestedOpen(nestedOpen === child.label ? null : child.label)}
-                                    className="flex items-center justify-between w-full px-2 py-1 text-sm text-muted-foreground hover:text-[hsl(var(--upg-orange))] rounded-lg transition-all duration-300 hover:scale-105"
+                                    className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-upg-sky-light hover:text-primary"
+                                    aria-expanded={nestedOpen === child.label}
                                   >
                                     <span>{child.label}</span>
-                                    <Plus className={`w-3 h-3 transition-transform ${nestedOpen === child.label ? 'rotate-45' : ''}`} />
+                                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${nestedOpen === child.label ? "rotate-180" : ""}`} />
                                   </button>
                                   
                                   {nestedOpen === child.label && (
-                                    <div className="mt-1 space-y-1">
-                                      {(child as any).children.map((sub: any) => (
+                                    <div className="ml-3 mt-1 space-y-1 border-l border-border pl-2">
+                                      {child.children.map((sub) => (
                                         <a
                                           key={sub.label}
-                                          href={sub.href}
+                                          href={sub.href ?? "#"}
                                           target="_top"
                                           rel="noopener noreferrer"
-                                          className="block px-2 py-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                                          className="block rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-upg-sky-light hover:text-primary"
                                           onClick={() => {
                                             setMobileOpen(false);
                                             setDropdownOpen(null);
@@ -332,7 +367,6 @@ const Navbar = () => {
                                         >
                                           <span className="flex items-center gap-1">
                                             <span>{sub.label}</span>
-                                            <div className="w-1 h-1 bg-primary rounded-full"></div>
                                           </span>
                                         </a>
                                       ))}
@@ -343,31 +377,29 @@ const Navbar = () => {
                                 <button
                                   key={child.label}
                                   onClick={() => handleNavClick(child.href)}
-                                  className="block text-left px-3 py-1 text-sm text-muted-foreground hover:text-[hsl(var(--upg-orange))] transition-all duration-300 hover:scale-105"
+                                  className="block rounded-md px-3 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-upg-sky-light hover:text-primary"
                                 >
                                   {child.label}
                                 </button>
-                              ) : (child as any).external ? (
+                              ) : child.external ? (
                                 <a
                                   key={child.label}
-                                  href={child.href}
+                                  href={child.href ?? "#"}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex items-center justify-between px-3 py-1 text-sm text-muted-foreground hover:text-[hsl(var(--upg-orange))] transition-all duration-300 hover:scale-105"
+                                  className="flex items-center justify-between rounded-md px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-upg-sky-light hover:text-primary"
                                   onClick={() => setMobileOpen(false)}
                                 >
                                   <span>{child.label}</span>
-                                  <div className="w-2 h-2 bg-accent rounded"></div>
                                 </a>
                               ) : (
                                 <Link
                                   key={child.label}
-                                  to={child.href}
-                                  className="flex items-center justify-between px-3 py-1 text-sm text-muted-foreground hover:text-[hsl(var(--upg-orange))] transition-all duration-300 hover:scale-105"
+                                  to={child.href ?? "#"}
+                                  className="flex items-center justify-between rounded-md px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-upg-sky-light hover:text-primary"
                                   onClick={() => setMobileOpen(false)}
                                 >
                                   <span>{child.label}</span>
-                                  <div className="w-2 h-2 bg-accent rounded"></div>
                                 </Link>
                               )}
                             </div>
@@ -379,7 +411,7 @@ const Navbar = () => {
                     <button
                       key={item.label}
                       onClick={() => handleNavClick(item.href!)}
-                      className="w-full px-4 py-3 text-sm font-medium text-foreground rounded-lg hover:bg-accent hover:text-[hsl(var(--upg-orange))] transition-all duration-300 hover:scale-105"
+                      className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-upg-sky-light hover:text-primary"
                     >
                       {item.label}
                     </button>
@@ -387,25 +419,20 @@ const Navbar = () => {
                     <Link
                       key={item.label}
                       to={item.href!}
-                      className="flex items-center justify-between w-full px-2 py-1 text-sm font-medium text-foreground rounded-lg hover:bg-accent hover:text-[hsl(var(--upg-orange))] transition-all duration-300 hover:scale-105"
+                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-upg-sky-light hover:text-primary ${location.pathname === item.href ? "bg-upg-sky-light text-primary" : "text-foreground"}`}
                       onClick={() => setMobileOpen(false)}
                     >
                       <span>{item.label}</span>
-                      <div className="w-2 h-2 bg-accent rounded"></div>
                     </Link>
                   )}
                 </div>
               ))}
+              </div>
             </div>
             
             {/* Séparateur bas + Réseaux sociaux */}
-            <div className="mt-4">
-              <div className="flex items-center">
-                <div className="flex-1 h-px bg-border"></div>
-                <div className="w-px h-px bg-border"></div>
-                <div className="flex-1 h-px bg-border"></div>
-              </div>
-              <div className="mt-3 flex items-center justify-center gap-3">
+            <div className="border-t border-border px-5 py-4">
+              <div className="flex items-center justify-center gap-3">
                 <a
                   href="https://cd.linkedin.com/company/universit%C3%A9-polytechnique-de-goma"
                   target="_blank"
@@ -430,8 +457,9 @@ const Navbar = () => {
                 </a>
               </div>
             </div>
-          </div>
-        </>
+          </aside>
+        </>,
+        document.body,
       )}
     </nav>
   );

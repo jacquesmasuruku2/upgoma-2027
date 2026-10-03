@@ -12,13 +12,13 @@ const FeaturesSection = () => {
   ];
 
   return (
-    <section className="py-16 bg-background">
+    <section className="bg-muted/50 py-16">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((f, i) => (
             <AnimatedSection key={i} delay={i * 0.15}>
-              <div className="bg-card border border-border rounded-lg p-6 hover:border-primary/30 transition-all duration-300 group">
-                <h3 className="font-semibold text-foreground text-lg mb-2 group-hover:text-primary transition-colors">{f.title}</h3>
+              <div className="group rounded-lg border border-border border-t-2 border-t-upg-sky/70 bg-card p-6 transition-colors duration-300 hover:border-upg-sky">
+                <h3 className="mb-2 text-lg font-semibold text-[hsl(var(--upg-dark))] transition-colors group-hover:text-primary">{f.title}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{f.text}</p>
               </div>
             </AnimatedSection>

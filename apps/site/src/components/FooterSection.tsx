@@ -111,9 +111,9 @@ const FooterSection = () => {
   };
 
   return (
-    <footer className="bg-[hsl(200,25%,18%)] text-white">
+    <footer className="bg-[hsl(var(--upg-dark))] text-white">
       {/* Orange top accent line */}
-      <div className="h-1 bg-upg-orange w-full" />
+      <div className="h-1 w-full bg-upg-sky" />
 
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -129,7 +129,7 @@ const FooterSection = () => {
                 {capitalizeFirstRestLower(t("footer.tagline"))}
               </p>
             </div>
-            <div className="w-20 sm:w-24 h-0.5 bg-upg-orange mb-4" />
+            <div className="mb-4 h-0.5 w-20 bg-upg-sky sm:w-24" />
             <p className="text-white/60 text-sm leading-relaxed">
               L'Université Polytechnique de Goma (UPG) est un établissement d'enseignement supérieur et universitaire engagé dans la formation de cadres compétents pour le développement durable de la RDC.
             </p>
@@ -158,12 +158,12 @@ const FooterSection = () => {
             <h4 className="text-sm font-bold uppercase tracking-wider text-white mb-1">
               {t("footer.quicklinks")}
             </h4>
-            <div className="w-10 h-0.5 bg-upg-orange mb-4" />
+            <div className="mb-4 h-0.5 w-10 bg-upg-sky" />
             <ul className="space-y-0">
               {quickLinks.map((l, i) => (
                 <li key={l.label}>
                   {l.label.startsWith("nav.") ? (
-                    <Link to={l.href} className="block text-white/60 text-sm py-2 hover:text-upg-orange transition-colors border-b border-dashed border-white/15">
+                    <Link to={l.href} className="block border-b border-dashed border-white/15 py-2 text-sm text-white/65 transition-colors hover:text-upg-sky">
                       {t(l.label)}
                     </Link>
                   ) : (
@@ -171,7 +171,7 @@ const FooterSection = () => {
                       href={l.href}
                       target="_top"
                       rel="noopener noreferrer"
-                      className="block text-white/60 text-sm py-2 hover:text-upg-orange transition-colors border-b border-dashed border-white/15"
+                      className="block border-b border-dashed border-white/15 py-2 text-sm text-white/65 transition-colors hover:text-upg-sky"
                     >
                       {l.label}
                     </a>
@@ -186,11 +186,11 @@ const FooterSection = () => {
             <h4 className="text-sm font-bold uppercase tracking-wider text-white mb-1">
               NOS SERVICES
             </h4>
-            <div className="w-10 h-0.5 bg-upg-orange mb-4" />
+            <div className="mb-4 h-0.5 w-10 bg-upg-sky" />
             <ul className="space-y-0">
               {(services || []).map((s: any) => (
                 <li key={s.id}>
-                  <Link to={`/service/${s.slug}`} className="block text-white/60 text-sm py-2 hover:text-upg-orange transition-colors border-b border-dashed border-white/15">
+                  <Link to={`/service/${s.slug}`} className="block border-b border-dashed border-white/15 py-2 text-sm text-white/65 transition-colors hover:text-upg-sky">
                     {s.name}
                   </Link>
                 </li>
@@ -203,18 +203,18 @@ const FooterSection = () => {
             <h4 className="text-sm font-bold uppercase tracking-wider text-white mb-1">
               {t("footer.contact")}
             </h4>
-            <div className="w-10 h-0.5 bg-upg-orange mb-4" />
+            <div className="mb-4 h-0.5 w-10 bg-upg-sky" />
             <ul className="space-y-0 text-white/60 text-sm">
               <li className="flex items-start gap-2 py-2 border-b border-dashed border-white/15">
-                <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-upg-orange" />
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-upg-sky" />
                 Goma, Quartier Lac Vert, Avenue Nyarutsiru, Avant entrée Buhimba
               </li>
               <li className="flex items-center gap-2 py-2 border-b border-dashed border-white/15">
-                <Phone className="w-4 h-4 shrink-0 text-upg-orange" />
+                <Phone className="h-4 w-4 shrink-0 text-upg-sky" />
                 +1 613-261-2229
               </li>
               <li className="flex items-center gap-2 py-2 border-b border-dashed border-white/15">
-                <Mail className="w-4 h-4 shrink-0 text-upg-orange" />
+                <Mail className="h-4 w-4 shrink-0 text-upg-sky" />
                 info@upgoma.org
               </li>
             </ul>
@@ -222,7 +222,7 @@ const FooterSection = () => {
             <h4 className="font-bold text-sm uppercase tracking-wider text-white mt-6 mb-1">
               {t("footer.newsletter")}
             </h4>
-            <div className="w-10 h-0.5 bg-upg-orange mb-3" />
+            <div className="mb-3 h-0.5 w-10 bg-upg-sky" />
             <form onSubmit={handleNewsletter} className="space-y-2">
               <Input
                 value={nlName}
@@ -238,7 +238,7 @@ const FooterSection = () => {
                   placeholder="Votre email"
                   className="bg-white/10 border-white/20 text-white placeholder:text-white/40 h-9 text-sm"
                 />
-                <Button type="submit" size="sm" className="bg-upg-orange text-white hover:bg-upg-orange/90 shrink-0" disabled={loading}>
+                <Button type="submit" size="sm" className="shrink-0 bg-upg-sky text-[hsl(var(--upg-dark))] hover:bg-upg-sky/90" disabled={loading}>
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </Button>
               </div>
@@ -247,10 +247,10 @@ const FooterSection = () => {
         </div>
       </div>
 
-      <div className="border-t border-white/10 bg-[hsl(200,25%,14%)]">
+      <div className="border-t border-white/10 bg-[hsl(215,55%,13%)]">
         <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-white/50 text-xs">
           <p>{t("footer.copyright")}</p>
-          <Link to="/politique-de-confidentialite" className="hover:text-upg-orange transition-colors underline underline-offset-2">
+          <Link to="/politique-de-confidentialite" className="underline underline-offset-2 transition-colors hover:text-upg-sky">
             Politique de confidentialité
           </Link>
           <span className="inline-flex flex-wrap items-center justify-center gap-x-0.5">
@@ -258,7 +258,7 @@ const FooterSection = () => {
             <a
               href={designerMailtoHref}
               onClick={openDesignerMail}
-              className="text-white/70 hover:text-upg-orange transition-colors underline-offset-2 hover:underline"
+              className="text-white/70 underline-offset-2 transition-colors hover:text-upg-sky hover:underline"
               title="Contacter par e-mail"
             >
               {t("footer.designedName")}

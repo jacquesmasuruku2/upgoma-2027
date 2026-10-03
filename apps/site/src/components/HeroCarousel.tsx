@@ -142,23 +142,24 @@ const HeroCarousel = () => {
       </AnimatePresence>
 
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/60" />
+      <div className="absolute inset-0 bg-[hsl(var(--upg-dark))]/70" />
+      <div className="absolute inset-x-0 bottom-0 h-1 bg-upg-sky/90" aria-hidden="true" />
 
       {/* Navigation Arrows */}
       <button
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 transition-opacity duration-300 hover:opacity-80"
+        className="absolute left-4 top-1/2 z-30 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/30 bg-[hsl(var(--upg-dark))]/35 transition-colors hover:bg-upg-sky"
         aria-label="Diapositive précédente"
       >
-        <ChevronLeft className="w-6 h-6 text-white" />
+        <ChevronLeft className="h-6 w-6 text-white" />
       </button>
 
       <button
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 transition-opacity duration-300 hover:opacity-80"
+        className="absolute right-4 top-1/2 z-30 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/30 bg-[hsl(var(--upg-dark))]/35 transition-colors hover:bg-upg-sky"
         aria-label="Diapositive suivante"
       >
-        <ChevronRight className="w-6 h-6 text-white" />
+        <ChevronRight className="h-6 w-6 text-white" />
       </button>
 
       {/* Indicators */}
@@ -168,7 +169,7 @@ const HeroCarousel = () => {
             key={index}
             onClick={() => goToSlide(index)}
             className={`w-3 h-3 rounded-full transition-all duration-300 ${
-              index === currentIndex ? "bg-white scale-125" : "bg-white/40 hover:bg-white/60"
+              index === currentIndex ? "scale-125 bg-upg-sky" : "bg-white/45 hover:bg-white/75"
             }`}
             aria-label={`Aller à la diapositive ${index + 1}`}
           />
@@ -225,7 +226,7 @@ const HeroCarousel = () => {
           >
             <Button
               size="lg"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-8 hover:scale-105 transition-transform duration-300"
+              className="bg-upg-sky px-8 font-semibold text-[hsl(var(--upg-dark))] transition-transform duration-300 hover:bg-upg-sky/90 hover:scale-105"
               onClick={() => (window.location.href = slides[currentIndex].cta.primary.link)}
             >
               {slides[currentIndex].cta.primary.text}
@@ -233,7 +234,7 @@ const HeroCarousel = () => {
             <Button
               variant="outline"
               size="lg"
-              className="border-primary-foreground text-primary-foreground bg-transparent hover:bg-primary-foreground/10 font-semibold px-8 hover:scale-105 transition-transform duration-300"
+              className="border-white/80 bg-transparent px-8 font-semibold text-white transition-transform duration-300 hover:border-upg-sky hover:bg-upg-sky/15 hover:scale-105"
               onClick={() => (window.location.href = slides[currentIndex].cta.secondary.link)}
             >
               {slides[currentIndex].cta.secondary.text}

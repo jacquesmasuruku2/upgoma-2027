@@ -77,16 +77,6 @@
   }
 }
 
-/* TopBar : barre sous le lien Frais / Admission (durée = TOPBAR_PROMO_ROTATE_MS en inline) */
-@keyframes topbar-promo-underline {
-  0% {
-    transform: scaleX(0);
-  }
-  100% {
-    transform: scaleX(1);
-  }
-}
-
 /* Marquee animation for stadium LED billboard effect */
 @keyframes marquee {
   0% {
@@ -108,12 +98,12 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 220 20% 8%;
+    --foreground: 215 40% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 8%;
+    --card-foreground: 215 40% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 8%;
-    --primary: 210 70% 35%;
+    --popover-foreground: 215 40% 15%;
+    --primary: 202 78% 37%;
     --primary-foreground: 0 0% 100%;
     --secondary: 210 25% 95%;
     --secondary-foreground: 220 20% 8%;
@@ -125,20 +115,20 @@
     --destructive-foreground: 0 0% 100%;
     --border: 210 20% 88%;
     --input: 210 20% 88%;
-    --ring: 210 70% 35%;
+    --ring: 198 78% 45%;
     --radius: 0.5rem;
     --upg-orange: 25 90% 55%;
-    --upg-sky: 210 70% 35%;
-    --upg-sky-light: 210 60% 94%;
-    --upg-dark: 220 20% 8%;
+    --upg-sky: 198 78% 49%;
+    --upg-sky-light: 198 70% 95%;
+    --upg-dark: 215 55% 17%;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 210 70% 35%;
+    --sidebar-primary: 202 78% 37%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 210 25% 95%;
     --sidebar-accent-foreground: 220 20% 8%;
     --sidebar-border: 210 20% 88%;
-    --sidebar-ring: 210 70% 35%;
+    --sidebar-ring: 198 78% 45%;
   }
 
   .dark {
@@ -148,7 +138,7 @@
     --card-foreground: 0 0% 95%;
     --popover: 220 20% 12%;
     --popover-foreground: 0 0% 95%;
-    --primary: 210 70% 45%;
+    --primary: 198 78% 48%;
     --primary-foreground: 0 0% 100%;
     --secondary: 220 20% 16%;
     --secondary-foreground: 0 0% 95%;
@@ -160,19 +150,19 @@
     --destructive-foreground: 0 0% 100%;
     --border: 220 20% 20%;
     --input: 220 20% 20%;
-    --ring: 210 70% 45%;
+    --ring: 198 78% 55%;
     --upg-orange: 25 90% 55%;
-    --upg-sky: 210 70% 45%;
-    --upg-sky-light: 210 40% 18%;
-    --upg-dark: 0 0% 95%;
+    --upg-sky: 198 78% 57%;
+    --upg-sky-light: 198 35% 18%;
+    --upg-dark: 215 55% 17%;
     --sidebar-background: 220 20% 10%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 210 70% 45%;
+    --sidebar-primary: 198 78% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 20% 16%;
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 220 20% 20%;
-    --sidebar-ring: 210 70% 45%;
+    --sidebar-ring: 198 78% 55%;
   }
 }
 
