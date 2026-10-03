@@ -9,7 +9,7 @@ interface ImportMetaEnv {
   /** Clé publique (anon) — requise pour le client Supabase. */
   readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
   readonly VITE_ADMIN_ALLOWED_EMAILS?: string;
-  /** URL de base de l’API admission (PostgreSQL). Vide en dev → proxy Vite `/api`. */
+  /** Origine publique de l’API admission (CockroachDB + R2), obligatoire en production. */
   readonly VITE_ADMISSION_API_BASE?: string;
 }
 

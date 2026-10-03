@@ -2,7 +2,7 @@
 
 ## Confirmation d’inscription
 
-Le formulaire `/admission` envoie les champs et pièces jointes à l’API Node `apps/server/server/admission-api.mjs`. Le backend enregistre le dossier dans Supabase, stocke la photo dans Cloudinary, stocke les PDF dans un bucket Cloudflare R2 privé, puis envoie la confirmation par l’API Brevo ou par SMTP Brevo. Aucun secret fournisseur n’est envoyé au navigateur.
+Le formulaire `/admission` envoie les champs et pièces jointes à l’API Node `apps/server/server/admission-api.mjs`. Le backend enregistre les champs dans `public.students` sur CockroachDB, stocke la photo et les PDF dans le bucket Cloudflare R2 privé, puis envoie la confirmation par l’API Brevo ou par SMTP Brevo. Aucun secret fournisseur n’est envoyé au navigateur.
 
 Dans le `.env` racine, configure les variables suivantes côté serveur :
 
@@ -12,25 +12,23 @@ BREVO_API_KEY=
 BREVO_SENDER_EMAIL=
 BREVO_SENDER_NAME=Université Polytechnique de Goma
 
-# Cloudinary : photo passeport
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
-
-# Cloudflare R2 : PDF privés
+# Cloudflare R2 : photo passeport et PDF privés
 CLOUDFLARE_ACCOUNT_ID=
 CLOUDFLARE_R2_ACCESS_KEY_ID=
 CLOUDFLARE_R2_SECRET_ACCESS_KEY=
 CLOUDFLARE_R2_BUCKET=upg-admissions
 
-# API derrière le reverse proxy
-CORS_ORIGINS=http://localhost:8080
+# API derrière le reverse proxy — conserver les origines déjà utilisées et ajouter les domaines publics
+CORS_ORIGINS=http://localhost:8080,https://upgoma.org,https://www.upgoma.org
 TRUST_PROXY_HOPS=0
+
+# Vercel : origine publique de l’API Node (pas celle du frontend statique)
+VITE_ADMISSION_API_BASE=https://api.votre-domaine.org
 ```
 
 Les variables SMTP Brevo déjà utilisées par le backend (`SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`) servent de solution de repli si la clé API Brevo n’est pas renseignée. Configure les secrets sur le VPS dans l’environnement du service Node; ne préfixe jamais une clé serveur par `VITE_`.
 
-Le bucket R2 doit rester privé. Les colonnes de documents contiennent des références `r2://...`; la photo passeport utilise l’URL sécurisée Cloudinary. En local, Vite relaie `/api` vers `127.0.0.1:8787`. En production, Nginx/Cloudflare doit transmettre `/api/*` au backend Node.
+Avant le déploiement, exécute une fois [`admissions.sql`](deploy/cockroachdb/admissions.sql) sur la base CockroachDB visée par `DATABASE_URL`. Le bucket R2 doit rester privé; la base conserve les références des objets R2, pas leur contenu binaire. En local, Vite relaie `/api` vers `127.0.0.1:8787`. Vercel hébergeant le site statique ne transmet pas automatiquement les POST `/api/*` à l’API Node (ce qui provoque le 405 des logs). Configure `VITE_ADMISSION_API_BASE` avec l’origine publique réelle du serveur Node, configure `CORS_ORIGINS` sur ce serveur avec `https://upgoma.org` et `https://www.upgoma.org`, puis reconstruis/redéploie le site. N’utilise pas `system.upgoma.org` comme base API tant que son reverse proxy n’est pas configuré pour transmettre `/api/*` au serveur Node.
 
 Le `.env.example` documente les noms des variables, sans valeurs de secrets. Le `.env` local est ignoré par Git.
 

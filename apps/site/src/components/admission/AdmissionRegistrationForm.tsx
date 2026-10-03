@@ -222,7 +222,11 @@ const AdmissionRegistrationForm = () => {
       if (bulletinFile) payload.append("bulletin", bulletinFile);
       if (attestationFile) payload.append("attestation", attestationFile);
 
-      const apiBase = (import.meta.env.VITE_ADMISSION_API_BASE || "").replace(/\/$/, "");
+      const configuredApiBase = import.meta.env.VITE_ADMISSION_API_BASE?.trim();
+      if (import.meta.env.PROD && !configuredApiBase) {
+        throw new Error("L’API d’inscription n’est pas configurée pour la production.");
+      }
+      const apiBase = (configuredApiBase || "").replace(/\/$/, "");
       const response = await fetch(`${apiBase}/api/admissions`, { method: "POST", body: payload });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result?.studentId) {

@@ -1,6 +1,5 @@
 /**
- * API locale : enregistre les inscriptions admission dans PostgreSQL (DATABASE_URL).
- * Les fichiers sont stockés sous uploads/admissions/ et servis sous /admission-files/…
+ * API admission : enregistre les dossiers dans CockroachDB et les fichiers dans Cloudflare R2.
  */
 import dotenv from "dotenv";
 import cors from "cors";
@@ -10,8 +9,6 @@ import path from "path";
 import Stripe from "stripe";
 import { fileURLToPath } from "url";
 import { randomUUID } from "crypto";
-import { createClient } from "@supabase/supabase-js";
-import { v2 as cloudinary } from "cloudinary";
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import nodemailer from "nodemailer";
 import { rateLimit } from "express-rate-limit";
@@ -31,7 +28,7 @@ const app = express();
 app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS || 0));
 
 const allowedOrigins = new Set(
-  (process.env.CORS_ORIGINS || "http://localhost:8080,http://localhost:5173,http://localhost:5174,http://localhost:4173,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:4173")
+  (process.env.CORS_ORIGINS || "http://localhost:8080,http://localhost:5173,http://localhost:5174,http://localhost:4173,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:4173,https://upgoma.org,https://www.upgoma.org")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean),
@@ -51,23 +48,6 @@ const authPool = process.env.DATABASE_URL
   ? new Pool({ connectionString: process.env.DATABASE_URL })
   : null;
 if (authPool) app.use("/api", createAuthRouter(authPool, allowedOrigins));
-
-const supabaseUrl = process.env.SUPABASE_URL?.trim()
-  || process.env.VITE_SUPABASE_URL?.trim()
-  || (process.env.VITE_SUPABASE_PROJECT_ID ? `https://${process.env.VITE_SUPABASE_PROJECT_ID.trim()}.supabase.co` : "");
-const supabaseKey = process.env.SUPABASE_ANON_KEY?.trim()
-  || process.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim()
-  || "";
-const supabase = supabaseUrl && supabaseKey
-  ? createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false, autoRefreshToken: false } })
-  : null;
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true,
-});
 
 const cloudflareAccountId = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
 const r2Bucket = process.env.CLOUDFLARE_R2_BUCKET?.trim();
@@ -346,8 +326,8 @@ app.post("/api/admissions", admissionSubmissionLimit, uploadFields, async (req, 
   let studentSaved = false;
 
   try {
-    if (!supabase) {
-      return res.status(503).json({ error: "Le stockage des inscriptions n’est pas configuré." });
+    if (!authPool) {
+      return res.status(503).json({ error: "La connexion à CockroachDB n’est pas configurée." });
     }
     if (!r2Client || !r2Bucket) {
       return res.status(503).json({ error: "Le stockage Cloudflare R2 n’est pas configuré pour les images et documents." });
@@ -413,21 +393,43 @@ app.post("/api/admissions", admissionSubmissionLimit, uploadFields, async (req, 
       documentUrls[`${field}_url`] = object.url;
     }
 
-    const { error: insertError } = await supabase.from("students").insert({
-      id: studentId,
-      ...admission,
-      status: "pending",
-      photo_url: photoObject.url,
-      diplome_url: documentUrls.diplome_url ?? null,
-      bulletin_url: documentUrls.bulletin_url ?? null,
-      attestation_url: documentUrls.attestation_url ?? null,
-    });
-    if (insertError) throw insertError;
+    await authPool.query(
+      `INSERT INTO public.students (
+         id, nom, postnom, prenom, sexe, date_naissance, lieu_naissance, nationalite,
+         telephone, email, adresse, domaine, filiere, promotion, annee_academique,
+         status, photo_url, diplome_url, bulletin_url, attestation_url
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+         $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+       )`,
+      [
+        studentId,
+        admission.nom,
+        admission.postnom,
+        admission.prenom,
+        admission.sexe,
+        admission.date_naissance,
+        admission.lieu_naissance,
+        admission.nationalite,
+        admission.telephone,
+        admission.email,
+        admission.adresse,
+        admission.domaine,
+        admission.filiere,
+        admission.promotion,
+        admission.annee_academique,
+        "pending",
+        photoObject.url,
+        documentUrls.diplome_url ?? null,
+        documentUrls.bulletin_url ?? null,
+        documentUrls.attestation_url ?? null,
+      ],
+    );
     studentSaved = true;
 
     let emailConfirmationSent = false;
     try {
-      emailConfirmationSent = await sendAdmissionEmail({ ...admission, id: studentId });
+      emailConfirmationSent = await sendAdmissionEmail({ ...admission, studentId });
     } catch (emailError) {
       console.error("[admission email] Delivery failed:", emailError instanceof Error ? emailError.message : "unknown error");
     }
@@ -554,5 +556,5 @@ app.use((err, _req, res, _next) => {
 
 const port = Number(process.env.ADMISSION_API_PORT || 8787);
 app.listen(port, "127.0.0.1", () => {
-  console.log(`[admission-api] http://127.0.0.1:${port} — PostgreSQL via DATABASE_URL`);
+  console.log(`[admission-api] http://127.0.0.1:${port} — CockroachDB via DATABASE_URL`);
 });
