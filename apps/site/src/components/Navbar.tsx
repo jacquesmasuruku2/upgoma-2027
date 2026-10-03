@@ -65,7 +65,7 @@ const Navbar = () => {
         {
           label: "Outils",
           children: [
-            { label: "Connexion étudiant", href: "/systeme-academique/index.html?start=/login-etudiant" },
+            { label: "Connexion étudiant", href: "https://system.upgoma.org/login-etudiant" },
             { label: "Vérification de l'étudiant", href: "/systeme-academique/index.html?start=/outils" },
           ],
         },

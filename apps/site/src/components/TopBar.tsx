@@ -266,12 +266,12 @@ const TopBar = () => {
           <span className="opacity-40 hidden md:inline" aria-hidden>
             |
           </span>
-          <Link
-            to="/systeme-academique?mode=student"
+          <a
+            href="https://system.upgoma.org/login-etudiant"
             className="hover:underline whitespace-nowrap hidden shrink-0 md:inline"
           >
             {t("topbar.login")}
-          </Link>
+          </a>
         </div>
         <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2 sm:gap-4">
           <div className="flex items-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-2 py-1 h-8">

@@ -21,12 +21,12 @@ const SimpleNav = () => {
           >
             Paiement
           </Link>
-          <Link 
-            to="/systeme-academique?mode=student" 
+          <a
+            href="https://system.upgoma.org/login-etudiant"
             className="flex items-center gap-2 text-sm hover:text-blue-200 transition-colors"
           >
             Connexion
-          </Link>
+          </a>
         </div>
       </div>
     </nav>
