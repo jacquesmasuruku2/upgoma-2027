@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,13 +8,18 @@ import { Eye, EyeOff, Chrome, Facebook, Loader2, ArrowRight } from 'lucide-react
 import { toast } from 'sonner';
 import logoUpg from '/logo-upg.jpg';
 
+const STUDENT_LOGIN_URL = 'https://system.upgoma.org/login-etudiant';
+
 export default function StudentLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const navigate = useNavigate();
+
+  const redirectToStudentLogin = () => {
+    window.location.href = STUDENT_LOGIN_URL;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +28,7 @@ export default function StudentLogin() {
     setTimeout(() => {
       setSubmitting(false);
       toast.success('Connexion réussie!');
-      navigate('/systeme-academique?mode=student');
+      redirectToStudentLogin();
     }, 1000);
   };
 
@@ -33,7 +38,7 @@ export default function StudentLogin() {
     setTimeout(() => {
       setGoogleLoading(false);
       toast.success('Connexion Google réussie!');
-      navigate('/systeme-academique?mode=student');
+      redirectToStudentLogin();
     }, 1000);
   };
 

@@ -2,9 +2,11 @@ import { useEffect } from "react";
 import Layout from "@/components/Layout";
 import { Loader2 } from "lucide-react";
 
+const STUDENT_LOGIN_URL = "https://system.upgoma.org/login-etudiant";
+
 const GrilleDeliberationPage = () => {
   useEffect(() => {
-    window.location.href = "/systeme-academique/index.html?start=/login-etudiant";
+    window.location.href = STUDENT_LOGIN_URL;
   }, []);
 
   return (

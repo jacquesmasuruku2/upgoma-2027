@@ -1,32 +1,27 @@
+import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import StudentLogin from "@/components/StudentLogin";
+
+const STUDENT_LOGIN_URL = "https://system.upgoma.org/login-etudiant";
 
 const AcademicSystemPage = () => {
   const [params] = useSearchParams();
   const mode = params.get("mode") ?? "student";
 
-  // Pour le mode étudiant, utiliser le formulaire React moderne
-  if (mode === "student") {
-    return <StudentLogin />;
-  }
+  useEffect(() => {
+    if (mode === "student") {
+      window.location.href = STUDENT_LOGIN_URL;
+      return;
+    }
 
-  // Sécurité côté UI : on n'expose la connexion admin qu'avec une valeur explicite.
-  // Par défaut, tout comportement inattendu -> page étudiant.
-  const iframeSrc =
-    mode === "system-admin2027"
-      ? "/systeme-academique/index.html?start=/"
-      : "/systeme-academique/index.html?start=/login-etudiant";
+    if (mode === "system-admin2027") {
+      window.location.href = "/systeme-academique/index.html?start=/";
+      return;
+    }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <iframe
-        title="Systeme Academique UPG"
-        src={iframeSrc}
-        allow="camera"
-        className="w-full h-screen bg-white border-0"
-      />
-    </div>
-  );
+    window.location.href = STUDENT_LOGIN_URL;
+  }, [mode]);
+
+  return null;
 };
 
 export default AcademicSystemPage;
