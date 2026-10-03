@@ -52,7 +52,8 @@ if (!filePath) {
   throw new Error("Usage: node server/import-cockroach-export.mjs <export.json> [--apply]");
 }
 
-const source = JSON.parse(await fs.readFile(path.resolve(filePath), "utf8"));
+const exportText = await fs.readFile(path.resolve(filePath), "utf8");
+const source = JSON.parse(exportText.replace(/^\uFEFF/, ""));
 if (source.formatVersion !== 1 || !source.tables || typeof source.tables !== "object") {
   throw new Error("Export invalide. Attendu: formatVersion=1 et un objet tables.");
 }
@@ -62,6 +63,10 @@ if (source.authUsers !== undefined) tables.auth_users = source.authUsers;
 const unexpectedTables = Object.keys(tables).filter((table) => !knownTables.has(table));
 if (unexpectedTables.length) {
   throw new Error(`Tables non prises en charge, aucune écriture effectuée: ${unexpectedTables.join(", ")}`);
+}
+const missingTables = tableOrder.filter((table) => !Object.hasOwn(tables, table));
+if (missingTables.length) {
+  throw new Error(`Export incomplet, aucune écriture effectuée. Tables absentes: ${missingTables.join(", ")}`);
 }
 
 for (const [table, rows] of Object.entries(tables)) {
@@ -120,6 +125,14 @@ try {
       report.errors.push("auth_users: l’export ne doit pas inclure de mots de passe.");
       continue;
     }
+    if (table === "profiles" || table === "user_roles") {
+      const allowedRoles = new Set(["super_admin", "appariteur", "enseignant", "finance"]);
+      const invalidRoles = [...new Set(rows.map((row) => row.role).filter((role) => role != null && !allowedRoles.has(role)))];
+      if (invalidRoles.length) {
+        report.errors.push(`${table}: rôle(s) non pris en charge: ${invalidRoles.join(", ")}.`);
+        continue;
+      }
+    }
 
     const missingRequired = [...columns.values()]
       .filter((column) => column.is_nullable === "NO" && column.column_default === null && !incomingColumns.has(column.column_name))
@@ -153,11 +166,11 @@ try {
           : [...new Set(rows.flatMap((row) => Object.keys(row)))];
         const quotedColumns = columns.map((column) => `"${column}"`).join(", ");
         const placeholders = columns.map((_, index) => `$${index + 1}`).join(", ");
-          const statement = `INSERT INTO "${schemaName}"."${targetTable}" (${quotedColumns}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`;
-          const tableReport = report.tables[table];
+        const statement = `INSERT INTO "${schemaName}"."${targetTable}" (${quotedColumns}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`;
+        const tableReport = report.tables[table];
 
-          for (const row of rows) {
-            const values = columns.map((column) => row[column] ?? null);
+        for (const row of rows) {
+          const values = columns.map((column) => row[column] ?? null);
           const result = await client.query(statement, values);
           if (result.rowCount) tableReport.imported += result.rowCount;
           else tableReport.skippedExisting += 1;
