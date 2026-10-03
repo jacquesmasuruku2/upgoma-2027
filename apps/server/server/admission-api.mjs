@@ -10,10 +10,10 @@ import Stripe from "stripe";
 import { fileURLToPath } from "url";
 import { randomUUID } from "crypto";
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import nodemailer from "nodemailer";
 import { rateLimit } from "express-rate-limit";
 import { Pool } from "pg";
-import { createAuthRouter, deliverEmail } from "./auth-api.mjs";
+import { createAuthRouter } from "./auth-api.mjs";
+import { deliverEmail } from "./email/brevo.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootEnvPath = path.resolve(__dirname, "..", "..", "..", ".env");
@@ -28,7 +28,7 @@ const app = express();
 app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS || 0));
 
 const allowedOrigins = new Set(
-  (process.env.CORS_ORIGINS || "http://localhost:8080,http://localhost:5173,http://localhost:5174,http://localhost:4173,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:4173,https://upgoma.org,https://www.upgoma.org")
+  (process.env.CORS_ORIGINS || "http://localhost:8080,http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:4173,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5175,http://127.0.0.1:4173,https://upgoma.org,https://www.upgoma.org,https://system.upgoma.org")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean),
@@ -47,19 +47,27 @@ app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 const authPool = process.env.DATABASE_URL
   ? new Pool({ connectionString: process.env.DATABASE_URL })
   : null;
-if (authPool) app.use("/api", createAuthRouter(authPool, allowedOrigins));
+app.use("/api", createAuthRouter(authPool, allowedOrigins));
 
-const cloudflareAccountId = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
-const r2Bucket = process.env.CLOUDFLARE_R2_BUCKET?.trim();
-const r2AccessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID?.trim();
-const r2SecretAccessKey = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY?.trim();
-const r2Client = cloudflareAccountId && r2AccessKeyId && r2SecretAccessKey
+const r2AccountId = (process.env.R2_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID)?.trim();
+const r2Bucket = (process.env.R2_BUCKET || process.env.CLOUDFLARE_R2_BUCKET)?.trim();
+const r2AccessKeyId = (process.env.R2_ACCESS_KEY_ID || process.env.CLOUDFLARE_R2_ACCESS_KEY_ID)?.trim();
+const r2SecretAccessKey = (process.env.R2_SECRET_ACCESS_KEY || process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY)?.trim();
+const r2Endpoint = (process.env.R2_ENDPOINT || (r2AccountId && `https://${r2AccountId}.r2.cloudflarestorage.com`))?.trim().replace(/\/$/, "");
+const r2PublicUrl = process.env.R2_PUBLIC_URL?.trim().replace(/\/$/, "");
+const r2Client = r2Endpoint && r2AccessKeyId && r2SecretAccessKey
   ? new S3Client({
       region: "auto",
-      endpoint: `https://${cloudflareAccountId}.r2.cloudflarestorage.com`,
+      endpoint: r2Endpoint,
       credentials: { accessKeyId: r2AccessKeyId, secretAccessKey: r2SecretAccessKey },
     })
   : null;
+
+function r2ObjectUrl(key) {
+  return r2PublicUrl
+    ? `${r2PublicUrl}/${key}`
+    : `${r2Endpoint}/${r2Bucket}/${key}`;
+}
 
 // Initialize Stripe
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -110,7 +118,7 @@ async function uploadPhotoToR2(file, studentId) {
     ContentType: file.mimetype || "image/png",
     Metadata: { studentId, kind: "photo" },
   }));
-  return { key, url: `https://${cloudflareAccountId}.r2.cloudflarestorage.com/${r2Bucket}/${key}` };
+  return { key, url: r2ObjectUrl(key) };
 }
 
 async function uploadGeneralImageToR2(file, folder = "general") {
@@ -125,7 +133,7 @@ async function uploadGeneralImageToR2(file, folder = "general") {
     ContentType: file.mimetype || "image/png",
     Metadata: { folder: safeFolder },
   }));
-  return { key, url: `https://${cloudflareAccountId}.r2.cloudflarestorage.com/${r2Bucket}/${key}` };
+  return { key, url: r2ObjectUrl(key) };
 }
 
 async function uploadPdfToR2(file, studentId, fieldName) {
@@ -153,7 +161,7 @@ async function uploadDocumentToR2(file, folder = "documents") {
     ContentType: file.mimetype || "application/octet-stream",
     Metadata: { folder: safeFolder },
   }));
-  return { key, url: `https://${cloudflareAccountId}.r2.cloudflarestorage.com/${r2Bucket}/${key}` };
+  return { key, url: r2ObjectUrl(key) };
 }
 
 async function deleteUploadedObjects({ r2Keys }) {
@@ -185,38 +193,12 @@ function buildAdmissionEmail({ studentId, nom, postnom, prenom, email, domaine, 
 
 async function sendAdmissionEmail(student) {
   const content = buildAdmissionEmail(student);
-  const sender = process.env.EMAIL_FROM || process.env.BREVO_SENDER_EMAIL;
-
-  if (process.env.BREVO_API_KEY && process.env.BREVO_SENDER_EMAIL) {
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: { "api-key": process.env.BREVO_API_KEY, "Content-Type": "application/json", accept: "application/json" },
-      body: JSON.stringify({
-        sender: { name: process.env.BREVO_SENDER_NAME || "Université Polytechnique de Goma", email: process.env.BREVO_SENDER_EMAIL },
-        to: [{ email: student.email, name: [student.prenom, student.nom, student.postnom].filter(Boolean).join(" ") }],
-        subject: content.subject,
-        htmlContent: content.html,
-        textContent: content.text,
-      }),
-    });
-    if (!response.ok) throw new Error(`Brevo API returned HTTP ${response.status}`);
-    return true;
-  }
-
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS && sender) {
-    const port = Number(process.env.SMTP_PORT || 587);
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port,
-      secure: process.env.SMTP_SECURE === "true" || port === 465,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
-    await transporter.sendMail({ from: sender, to: student.email, ...content });
-    transporter.close();
-    return true;
-  }
-
-  return false;
+  await deliverEmail({
+    to: student.email,
+    name: [student.prenom, student.nom, student.postnom].filter(Boolean).join(" "),
+    ...content,
+  });
+  return true;
 }
 
 const admissionSubmissionLimit = rateLimit({
@@ -458,7 +440,7 @@ app.post("/api/uploads", genericUpload.single("file"), async (req, res) => {
 
     if (type === "image") {
       if (!r2Client || !r2Bucket) {
-        return res.status(503).json({ error: "Cloudflare R2 n’est pas configuré côté serveur. Vérifiez CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY et CLOUDFLARE_R2_BUCKET." });
+        return res.status(503).json({ error: "Cloudflare R2 n’est pas configuré côté serveur. Vérifiez R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY et R2_BUCKET." });
       }
 
       const result = await uploadGeneralImageToR2(req.file, folder);
@@ -467,7 +449,7 @@ app.post("/api/uploads", genericUpload.single("file"), async (req, res) => {
 
     if (type === "document") {
       if (!r2Client || !r2Bucket) {
-        return res.status(503).json({ error: "Cloudflare R2 n’est pas configuré côté serveur. Vérifiez CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY et CLOUDFLARE_R2_BUCKET." });
+        return res.status(503).json({ error: "Cloudflare R2 n’est pas configuré côté serveur. Vérifiez R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY et R2_BUCKET." });
       }
 
       const result = await uploadDocumentToR2(req.file, folder);

@@ -40,7 +40,7 @@ export default function ResetPassword() {
 
     setLoading(true);
     try {
-      const { user } = await authRequest<{ user: { role: string } }>('/api/auth/complete-token', {
+      const { user } = await authRequest<{ user: { role: string } }>('/api/auth/reset-password', {
         method: 'POST',
         body: JSON.stringify({ token: searchParams.get('token'), password }),
       });

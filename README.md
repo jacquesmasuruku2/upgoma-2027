@@ -136,13 +136,34 @@ cd packages/config && npm run dev
 
 - **Frontend**: React 18, Vite 5, TypeScript, Tailwind CSS, Shadcn/ui
 - **Backend**: Express.js, Node.js
-- **Database**: Supabase/PostgreSQL
+- **Database**: CockroachDB pour l'authentification native et les admissions
+- **Authentication**: API Node native, sessions cookie HttpOnly
+- **Email transactionnel**: Brevo SMTP
+- **Stockage des fichiers**: Cloudflare R2
 - **Styling**: Tailwind CSS, Radix UI
 - **Package Manager**: npm workspaces
 - **Linting**: ESLint + TypeScript ESLint
 - **Formatting**: Prettier
 - **Testing**: Vitest
 - **Editor**: VSCode (avec workspace config)
+
+## Authentification et déploiement API
+
+Les routes natives de session sont servies par `apps/server/server/admission-api.mjs`
+sous `/api/auth/*`. En production, `system.upgoma.org` doit relayer `/api/*`
+vers le service Node sur `127.0.0.1:8787` avec
+[`deploy/nginx/admission-api-location.conf`](./deploy/nginx/admission-api-location.conf).
+Sans ce proxy, l'hébergement statique ne peut pas traiter les requêtes POST d'authentification.
+
+Configurer côté serveur `DATABASE_URL`, les variables Brevo SMTP, `APP_URL`,
+les identifiants R2 et `CORS_ORIGINS` (incluant `https://system.upgoma.org`).
+Les tables de session et de jetons sont créées par
+[`deploy/postgresql/native_auth.sql`](./deploy/postgresql/native_auth.sql).
+
+La migration des autres écrans de gestion académique hors Supabase n'est pas
+encore achevée : les écrans de données listés dans `apps/systems/src` utilisent
+encore l'ancien client pour certaines opérations. Ne supprimez pas sa dépendance
+avant d'avoir migré ces appels vers des routes Node protégées.
 
 ## 📊 Statistiques
 

@@ -1,8 +1,10 @@
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual, createHash } from "node:crypto";
 import { promisify } from "node:util";
 import express from "express";
-import nodemailer from "nodemailer";
 import { rateLimit } from "express-rate-limit";
+import { deliverEmail, deliverEmails } from "./email/brevo.mjs";
+
+export { deliverEmail, deliverEmails };
 
 const scrypt = promisify(scryptCallback);
 const sessionCookie = "upg_session";
@@ -140,107 +142,6 @@ function requireSuperAdmin(pool) {
   });
 }
 
-export async function deliverEmail({ to, name, subject, text, html }) {
-  const sender = process.env.EMAIL_FROM || process.env.BREVO_SENDER_EMAIL;
-  if (process.env.BREVO_API_KEY && process.env.BREVO_SENDER_EMAIL) {
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: { "api-key": process.env.BREVO_API_KEY, "Content-Type": "application/json", accept: "application/json" },
-      body: JSON.stringify({
-        sender: { name: process.env.BREVO_SENDER_NAME || "Université Polytechnique de Goma", email: process.env.BREVO_SENDER_EMAIL },
-        to: [{ email: to, name }],
-        subject,
-        htmlContent: html,
-        textContent: text,
-      }),
-    });
-    if (!response.ok) throw new Error(`Brevo API returned HTTP ${response.status}`);
-    return;
-  }
-
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS && sender) {
-    const port = Number(process.env.SMTP_PORT || 587);
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port,
-      secure: process.env.SMTP_SECURE === "true" || port === 465,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
-    try {
-      await transporter.sendMail({ from: sender, to, subject, text, html });
-    } finally {
-      transporter.close();
-    }
-    return;
-  }
-
-  throw new Error("Brevo ou SMTP n’est pas configuré côté serveur.");
-}
-
-export async function deliverEmails(messages) {
-  if (!messages.length) return { sent: 0, failed: 0 };
-
-  const useBrevoApi = Boolean(process.env.BREVO_API_KEY && process.env.BREVO_SENDER_EMAIL);
-  const sender = process.env.EMAIL_FROM || process.env.BREVO_SENDER_EMAIL;
-  let transporter = null;
-  if (!useBrevoApi) {
-    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS || !sender) {
-      throw new Error("Brevo ou SMTP n’est pas configuré côté serveur.");
-    }
-    const port = Number(process.env.SMTP_PORT || 587);
-    transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port,
-      secure: process.env.SMTP_SECURE === "true" || port === 465,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-      pool: true,
-      maxConnections: 5,
-      maxMessages: 100,
-    });
-  }
-
-  let nextIndex = 0;
-  let sent = 0;
-  let failed = 0;
-  const sendOne = async (message) => {
-    if (useBrevoApi) {
-      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: { "api-key": process.env.BREVO_API_KEY, "Content-Type": "application/json", accept: "application/json" },
-        body: JSON.stringify({
-          sender: { name: process.env.BREVO_SENDER_NAME || "Université Polytechnique de Goma", email: process.env.BREVO_SENDER_EMAIL },
-          to: [{ email: message.to, name: message.name }],
-          subject: message.subject,
-          htmlContent: message.html,
-          textContent: message.text,
-        }),
-      });
-      if (!response.ok) throw new Error(`Brevo API returned HTTP ${response.status}`);
-      return;
-    }
-    await transporter.sendMail({ from: sender, ...message });
-  };
-
-  const worker = async () => {
-    while (nextIndex < messages.length) {
-      const index = nextIndex++;
-      try {
-        await sendOne(messages[index]);
-        sent += 1;
-      } catch {
-        failed += 1;
-      }
-    }
-  };
-
-  try {
-    await Promise.all(Array.from({ length: Math.min(5, messages.length) }, worker));
-  } finally {
-    transporter?.close();
-  }
-  return { sent, failed };
-}
-
 async function createAccountToken(pool, userId, purpose) {
   const token = randomBytes(32).toString("base64url");
   await pool.query("DELETE FROM auth.account_tokens WHERE user_id = $1 AND purpose = $2", [userId, purpose]);
@@ -252,7 +153,7 @@ async function createAccountToken(pool, userId, purpose) {
 }
 
 function accountLink(req, token) {
-  const appUrl = (process.env.APP_PUBLIC_URL || req.get("origin") || "https://www.upgoma.org").replace(/\/$/, "");
+  const appUrl = (process.env.APP_URL || process.env.APP_PUBLIC_URL || "https://system.upgoma.org").replace(/\/$/, "");
   return `${appUrl}/reset-password?token=${encodeURIComponent(token)}`;
 }
 
@@ -280,12 +181,12 @@ const emailLimit = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5, standardHeade
 const campaignLimit = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: "draft-8", legacyHeaders: false });
 
 export function createAuthRouter(pool, trustedOrigins) {
-  if (!pool) throw new Error("DATABASE_URL is required for native authentication.");
   const router = express.Router();
   router.use((req, res, next) => {
     if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
     const origin = req.get("origin");
     if (!origin || !trustedOrigins.has(origin)) return res.status(403).json({ error: "Origine non autorisée." });
+    if (!pool) return res.status(503).json({ error: "Le service d’authentification n’est pas configuré (DATABASE_URL)." });
     return next();
   });
 
@@ -320,7 +221,9 @@ export function createAuthRouter(pool, trustedOrigins) {
     }
   });
 
-  router.get("/auth/session", requireAuth(pool), (req, res) => res.json({ user: req.authSession.user }));
+  const sendCurrentUser = (req, res) => res.json({ user: req.authSession.user });
+  router.get("/auth/session", requireAuth(pool), sendCurrentUser);
+  router.get("/auth/me", requireAuth(pool), sendCurrentUser);
 
   router.post("/auth/logout", async (req, res) => {
     try {
@@ -341,7 +244,7 @@ export function createAuthRouter(pool, trustedOrigins) {
 
     try {
       const { rows } = await pool.query(
-        "SELECT id, email FROM auth.users WHERE lower(trim(email)) = $1 AND email_confirmed_at IS NOT NULL LIMIT 1",
+        "SELECT id, email FROM auth.users WHERE lower(trim(email)) = $1 LIMIT 1",
         [email],
       );
       if (rows[0]) {
@@ -356,7 +259,7 @@ export function createAuthRouter(pool, trustedOrigins) {
     }
   });
 
-  router.post("/auth/complete-token", async (req, res) => {
+  const completeAccountToken = async (req, res) => {
     const token = typeof req.body.token === "string" ? req.body.token : "";
     const password = typeof req.body.password === "string" ? req.body.password : "";
     if (!token || !isStrongPassword(password)) {
@@ -367,7 +270,10 @@ export function createAuthRouter(pool, trustedOrigins) {
     try {
       await client.query("BEGIN");
       const { rows } = await client.query(
-        "SELECT t.id AS token_id, t.user_id, t.purpose FROM auth.account_tokens t WHERE t.token_hash = $1 AND t.expires_at > now() FOR UPDATE",
+        `SELECT t.id AS token_id, t.user_id, t.purpose
+         FROM auth.account_tokens t
+         WHERE t.token_hash = $1 AND t.expires_at > now()
+         FOR UPDATE`,
         [hashToken(token)],
       );
       if (!rows[0]) {
@@ -381,6 +287,7 @@ export function createAuthRouter(pool, trustedOrigins) {
         [passwordHash, rows[0].user_id],
       );
       await client.query("DELETE FROM auth.account_tokens WHERE user_id = $1", [rows[0].user_id]);
+      await client.query("DELETE FROM auth.app_sessions WHERE user_id = $1", [rows[0].user_id]);
       const sessionToken = randomBytes(32).toString("base64url");
       await client.query(
         "INSERT INTO auth.app_sessions (user_id, token_hash, expires_at) VALUES ($1, $2, now() + interval '7 days')",
@@ -393,12 +300,14 @@ export function createAuthRouter(pool, trustedOrigins) {
       return res.json({ ok: true, user, purpose: rows[0].purpose });
     } catch (error) {
       await client.query("ROLLBACK").catch(() => {});
-      console.error("[auth/complete-token] Failed:", error instanceof Error ? error.message : "unknown error");
+      console.error("[auth/reset-password] Failed:", error instanceof Error ? error.message : "unknown error");
       return res.status(503).json({ error: "Impossible de définir le mot de passe pour le moment." });
     } finally {
       client.release();
     }
-  });
+  };
+  router.post("/auth/reset-password", completeAccountToken);
+  router.post("/auth/complete-token", completeAccountToken);
 
   router.post("/auth/change-password", requireAuth(pool), async (req, res) => {
     const currentPassword = typeof req.body.currentPassword === "string" ? req.body.currentPassword : "";
