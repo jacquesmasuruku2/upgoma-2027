@@ -150,8 +150,9 @@ cd packages/config && npm run dev
 ## Authentification et déploiement API
 
 Les routes natives de session sont servies par `apps/server/server/admission-api.mjs`
-sous `/api/auth/*`. En production, `system.upgoma.org` doit relayer `/api/*`
-vers le service Node sur `127.0.0.1:8787` avec
+sous `/api/auth/*`. En production, le projet Vercel de `system.upgoma.org`
+relaye `/api/*` vers `api.upgoma.org`, qui transmet les requêtes au service Node
+sur `127.0.0.1:8787` avec
 [`deploy/nginx/admission-api-location.conf`](./deploy/nginx/admission-api-location.conf).
 Sans ce proxy, l'hébergement statique ne peut pas traiter les requêtes POST d'authentification.
 
@@ -159,6 +160,40 @@ Configurer côté serveur `DATABASE_URL`, les variables Brevo SMTP, `APP_URL`,
 les identifiants R2 et `CORS_ORIGINS` (incluant `https://system.upgoma.org`).
 Les tables de session et de jetons sont créées par
 [`deploy/postgresql/native_auth.sql`](./deploy/postgresql/native_auth.sql).
+
+### Structure et projets Vercel
+
+Le dépôt reste un monorepo simple contenant le site public, le système qui
+inclut la gestion du site, et l'API hébergée sur le VPS :
+
+```text
+UPGOMA2027/
+├── apps/site/       # Site principal
+├── apps/systems/    # Système académique + gestion du site
+├── apps/server/     # API Node sur le VPS
+└── packages/        # Code partagé
+```
+
+Créer deux projets Vercel liés au même dépôt et à la branche `main` :
+
+| Projet Vercel | Root Directory | Build Command | Output Directory | Domaine conseillé |
+| --- | --- | --- | --- | --- |
+| Site principal | `.` | `npm run build:site` | `apps/site/dist` | `www.upgoma.org` |
+| Système académique | `apps/systems` | `npm run build` | `dist` | `system.upgoma.org` |
+
+Remplacer/activer ces valeurs dans **Build and Development Settings** si
+nécessaire. Pour le projet Système, activer **Include source files outside of
+the Root Directory in the Build Step** : il importe du code depuis `apps/site`
+et les packages partagés. Son fichier
+[`apps/systems/vercel.json`](./apps/systems/vercel.json) configure le build
+Vite, le fallback SPA et le proxy `/api/*` vers `https://api.upgoma.org`.
+
+Ajouter un enregistrement DNS `A` pour `api.upgoma.org` pointant vers l'IPv4
+publique du VPS et un certificat TLS valide pour ce nom. Le cookie de session
+reste same-origin côté navigateur (`system.upgoma.org`) grâce au proxy Vercel.
+Ne définissez pas `VITE_ADMIN_API_URL` vers le VPS dans le projet Système : les
+appels API doivent rester relatifs à `system.upgoma.org` afin de passer par le
+proxy Vercel.
 
 ### Installation de l'API sur un VPS Linux avec Nginx
 
@@ -179,7 +214,7 @@ Sans cookie de session, cette route doit répondre HTTP 401. En cas d'échec,
 consulter `sudo journalctl -u upgoma-api -n 80 --no-pager`.
 
 Pour Nginx, ajouter cette directive **dans le bloc `server` HTTPS de
-`system.upgoma.org`** après avoir copié le dépôt à son emplacement permanent :
+`api.upgoma.org`** après avoir copié le dépôt à son emplacement permanent :
 
 ```nginx
 include /chemin/vers/upgoma-2027/deploy/nginx/admission-api-location.conf;
@@ -191,20 +226,26 @@ Tester et recharger Nginx :
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Vérifier ensuite le proxy public. Le corps doit être du JSON et le statut HTTP
-401 sans session (pas le HTML de l'application) :
+Vérifier l'API directement sur le VPS : le corps doit être du JSON et le statut
+HTTP 401 sans session. Vérifier ensuite le proxy Vercel sur le domaine système :
 
 ```bash
+curl -i https://api.upgoma.org/api/auth/session
 curl -i https://system.upgoma.org/api/auth/session
 ```
 
 L'API doit aussi rester active via `systemd` avant de configurer le proxy Nginx.
 Ne pas lancer le serveur de développement Vite comme serveur API de production.
 
-La migration des autres écrans de gestion académique hors Supabase n'est pas
-encore achevée : les écrans de données listés dans `apps/systems/src` utilisent
-encore l'ancien client pour certaines opérations. Ne supprimez pas sa dépendance
-avant d'avoir migré ces appels vers des routes Node protégées.
+L'authentification native (connexion, session, invitations et réinitialisation
+par e-mail) est prévue pour utiliser l'API VPS. **La migration complète des
+données n'est pas terminée** : plusieurs écrans du système académique et de
+gestion du site utilisent encore Supabase pour lire/écrire les données ou
+stocker les fichiers. Jusqu'à leur migration, le projet Système a besoin de
+`VITE_SUPABASE_URL` (ou `VITE_SUPABASE_PROJECT_ID`) et
+`VITE_SUPABASE_PUBLISHABLE_KEY` dans les variables d'environnement Vercel, ou
+les modules concernés doivent être migrés vers l'API/R2. Le déploiement Vercel
+seul ne termine pas cette migration.
 
 ## 📊 Statistiques
 

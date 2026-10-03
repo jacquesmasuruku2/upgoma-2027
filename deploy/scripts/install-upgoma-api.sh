@@ -97,5 +97,5 @@ if [[ "${HTTP_STATUS}" != "401" ]]; then
 fi
 
 echo "UPGoma API is enabled and active; unauthenticated session check returned HTTP 401."
-echo "Next, add deploy/nginx/admission-api-location.conf inside the HTTPS server block for system.upgoma.org."
+echo "Next, add deploy/nginx/admission-api-location.conf inside the HTTPS server block for api.upgoma.org."
 echo "Then run: nginx -t && systemctl reload nginx"
